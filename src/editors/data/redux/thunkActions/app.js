@@ -123,6 +123,16 @@ export const initialize = (data) => (dispatch) => {
  */
 export const saveBlock = (content, returnToUnit) => (dispatch) => {
   dispatch(actions.app.setBlockContent(content));
+  if (true) {
+    dispatch(requests.createBlock({
+      content,
+      onSuccess: (response) => {
+        dispatch(actions.app.setSaveResponse(response));
+        returnToUnit(response.data);
+      },
+    }));
+    return;
+  }
   dispatch(requests.saveBlock({
     content,
     onSuccess: (response) => {

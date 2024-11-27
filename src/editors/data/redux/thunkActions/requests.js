@@ -12,6 +12,7 @@ import { selectors as appSelectors } from '../app';
 import * as module from './requests';
 import { isLibraryKey } from '../../../../generic/key-utils';
 import { acceptedImgKeys } from '../../../sharedComponents/ImageUploadModal/SelectImageModal/utils';
+import { createLibraryBlock } from '../../../../library-authoring/data/api';
 
 // Similar to `import { actions, selectors } from '..';` but avoid circular imports:
 const actions = { requests: requestsActions };
@@ -122,6 +123,25 @@ export const saveBlock = ({ content, ...rest }) => (dispatch, getState) => {
     ...rest,
   }));
 };
+
+/**
+ * Tracked saveBlock api method.  Tracked to the `saveBlock` request key.
+ * @param {string} content
+ * @param {[func]} onSuccess - onSuccess method ((response) => { ... })
+ * @param {[func]} onFailure - onFailure method ((error) => { ... })
+ */
+export const createBlock = ({ content, ...rest }) => (dispatch, getState) => {
+  createLibraryBlock({
+    libraryId: selectors.app.learningContextId(getState()),
+    blockType: selectors.app.blockType(getState()),
+    definitionId: selectors.app.blockId(getState()).split(':')[4],
+  }).then((data) => {
+    console.debug('create a new component', data);
+  }).catch((error) => {
+    console.debug('fail to create a new block', error);
+  });
+};
+
 export const uploadAsset = ({ asset, ...rest }) => (dispatch, getState) => {
   const learningContextId = selectors.app.learningContextId(getState());
   dispatch(module.networkRequest({
