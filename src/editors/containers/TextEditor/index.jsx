@@ -48,7 +48,22 @@ const TextEditor = ({
   }
 
   if (!refReady) { return null; }
-
+console.log({
+  onClose,
+  returnFunction,
+  // redux
+  showRawEditor,
+  blockValue,
+  blockId,
+  blockFailed,
+  initializeEditor,
+  blockFinished,
+  learningContextId,
+  images,
+  isLibrary,
+  // inject
+  intl,
+})
   const selectEditor = () => {
     if (showRawEditor) {
       return (
@@ -132,7 +147,7 @@ export const mapStateToProps = (state) => ({
   blockFailed: selectors.requests.isFailed(state, { requestKey: RequestKeys.fetchBlock }),
   blockId: selectors.app.blockId(state),
   showRawEditor: selectors.app.showRawEditor(state),
-  blockFinished: selectors.requests.isFinished(state, { requestKey: RequestKeys.fetchBlock }),
+  blockFinished: true,
   learningContextId: selectors.app.learningContextId(state),
   images: selectors.app.images(state),
   isLibrary: selectors.app.isLibrary(state),

@@ -89,13 +89,17 @@ export const fetchCourseDetails = () => (dispatch) => {
 export const initialize = (data) => (dispatch) => {
   const editorType = data.blockType;
   dispatch(actions.app.initialize(data));
-  dispatch(module.fetchBlock());
+  if (!data.blockId?.includes('new-block')) {
+    dispatch(module.fetchBlock());
+  }
   if (data.blockId?.startsWith('block-v1:')) {
     dispatch(module.fetchUnit());
   }
   switch (editorType) {
     case 'problem':
-      dispatch(module.fetchImages({ pageNumber: 0 }));
+      if (!data.blockId?.includes('new-block')) {
+        dispatch(module.fetchImages({ pageNumber: 0 }));
+      }
       break;
     case 'video':
       dispatch(module.fetchVideos());
@@ -103,8 +107,11 @@ export const initialize = (data) => (dispatch) => {
       dispatch(module.fetchCourseDetails());
       break;
     case 'html':
-      if (isLibraryKey(data.learningContextId)) { dispatch(actions.app.resetImages()); }
-      dispatch(module.fetchImages({ pageNumber: 0 }));
+      if (!data.blockId?.includes('new-block')) {
+        if (isLibraryKey(data.learningContextId)) { dispatch(actions.app.resetImages()); }
+        dispatch(module.fetchImages({ pageNumber: 0 }));
+      }
+
       break;
     default:
       break;

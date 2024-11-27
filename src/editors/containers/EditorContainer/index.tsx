@@ -78,7 +78,7 @@ const EditorContainer: React.FC<Props> = ({
   const dispatch = useDispatch();
   // Required to mark data as not dirty on save
   const [saved, setSaved] = React.useState(false);
-  const isInitialized = hooks.isInitialized();
+  const isInitialized = true;
   const { isCancelConfirmOpen, openCancelConfirmModal, closeCancelConfirmModal } = hooks.cancelConfirmModalToggle();
   const handleCancel = hooks.handleCancel({ onClose, returnFunction });
   const disableSave = !isInitialized;

@@ -192,27 +192,28 @@ const AddContentContainer = () => {
   };
 
   const onCreateBlock = (blockType: string) => {
-    createBlockMutation.mutateAsync({
-      libraryId,
-      blockType,
-      definitionId: `${uuid4()}`,
-    }).then((data) => {
-      const hasEditor = canEditComponent(data.id);
-      if (hasEditor) {
-        // linkComponent on editor close.
-        openComponentEditor(data.id, () => linkComponent(data.id));
-      } else {
-        // We can't start editing this right away so just show a toast message:
-        showToast(intl.formatMessage(messages.successCreateMessage));
-        linkComponent(data.id);
-      }
-    }).catch((error) => {
-      showToast(parseErrorMsg(
-        error,
-        messages.errorCreateMessageWithDetail,
-        messages.errorCreateMessage,
-      ));
-    });
+    // createBlockMutation.mutateAsync({
+    //   libraryId,
+    //   blockType,
+    //   definitionId: `${uuid4()}`,
+    // }).then((data) => {
+    const usageKey = `${libraryId}:${blockType}:new-block`.replace('i', '');
+    //   const hasEditor = canEditComponent(usageKey);
+    //   if (hasEditor) {
+    //     // linkComponent on editor close.
+        openComponentEditor(usageKey, () => linkComponent(''));
+      // } else {
+      //   // We can't start editing this right away so just show a toast message:
+      //   showToast(intl.formatMessage(messages.successCreateMessage));
+      //   linkComponent(usageKey);
+      // }
+    // }).catch((error) => {
+    //   showToast(parseErrorMsg(
+    //     error,
+    //     messages.errorCreateMessageWithDetail,
+    //     messages.errorCreateMessage,
+    //   ));
+    // });
   };
 
   const onCreateContent = (blockType: string) => {
