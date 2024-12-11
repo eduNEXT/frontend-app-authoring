@@ -197,11 +197,11 @@ const AddContentContainer = () => {
     //   blockType,
     //   definitionId: `${uuid4()}`,
     // }).then((data) => {
-    const usageKey = `${libraryId}:${blockType}:new-block`.replace('i', '');
+    const usageKey = `${libraryId}:${blockType}:${uuid4()}`.replace('i', '');
     //   const hasEditor = canEditComponent(usageKey);
     //   if (hasEditor) {
     //     // linkComponent on editor close.
-        openComponentEditor(usageKey, () => linkComponent(''));
+        openComponentEditor(usageKey, true, () => linkComponent(''));
       // } else {
       //   // We can't start editing this right away so just show a toast message:
       //   showToast(intl.formatMessage(messages.successCreateMessage));

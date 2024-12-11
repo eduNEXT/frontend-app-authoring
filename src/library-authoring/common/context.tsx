@@ -70,6 +70,7 @@ export interface SidebarComponentInfo {
 
 export interface ComponentEditorInfo {
   usageKey: string;
+  isNewBlock: boolean;
   onClose?: () => void;
 }
 
@@ -107,7 +108,7 @@ export type LibraryContextData = {
   /** If the editor is open and the user is editing some component, this is the component being edited. */
   componentBeingEdited: ComponentEditorInfo | undefined;
   /** If an onClose callback is provided, it will be called when the editor is closed. */
-  openComponentEditor: (usageKey: string, onClose?: () => void) => void;
+  openComponentEditor: (usageKey: string, isNewBlock: boolean, onClose?: () => void) => void;
   closeComponentEditor: () => void;
   resetSidebarAdditionalActions: () => void;
 } & ComponentPickerType;
@@ -187,8 +188,8 @@ export const LibraryProvider = ({
       return undefined;
     });
   }, []);
-  const openComponentEditor = useCallback((usageKey: string, onClose?: () => void) => {
-    setComponentBeingEdited({ usageKey, onClose });
+  const openComponentEditor = useCallback((usageKey: string, isNewBlock: boolean, onClose?: () => void) => {
+    setComponentBeingEdited({ usageKey, isNewBlock, onClose });
   }, []);
 
   const [selectedComponents, setSelectedComponents] = useState<SelectedComponent[]>([]);

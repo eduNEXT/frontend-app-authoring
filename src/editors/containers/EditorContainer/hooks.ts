@@ -11,6 +11,7 @@ export const {
   clearSaveError,
   navigateCallback,
   nullMethod,
+  createBlock,
   saveBlock,
 } = appHooks;
 
@@ -24,6 +25,7 @@ export const handleSaveClicked = ({
   getContent,
   validateEntry,
   returnFunction,
+  isNewBlock,
 }) => {
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const returnUrl = useSelector(selectors.app.returnUrl);
@@ -31,6 +33,11 @@ export const handleSaveClicked = ({
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const analytics = useSelector(selectors.app.analytics);
 
+  if (isNewBlock) {
+    createBlock({
+      dispatch,
+    });
+  }
   return () => saveBlock({
     analytics,
     content: getContent({ dispatch }),

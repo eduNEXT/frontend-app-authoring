@@ -30,6 +30,7 @@ const EditorPage: React.FC<Props> = ({
   onClose = null,
   returnFunction = null,
   fullScreen = true,
+  isNewBlock = false,
 }) => (
   <Provider store={store}>
     <ErrorBoundary
@@ -38,7 +39,7 @@ const EditorPage: React.FC<Props> = ({
         studioEndpointUrl,
       }}
     >
-      <EditorContextProvider fullScreen={fullScreen} learningContextId={courseId}>
+      <EditorContextProvider fullScreen={fullScreen} learningContextId={courseId} isNewBlock={isNewBlock}>
         <Editor
           {...{
             onClose,

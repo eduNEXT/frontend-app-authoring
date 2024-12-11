@@ -15,6 +15,7 @@ export interface EditorContext {
    * editors in a fullscreen view. This approach is deprecated.
    */
   fullScreen: boolean;
+  isNewBlock: boolean;
 }
 
 const context = React.createContext<EditorContext | undefined>(undefined);
@@ -33,6 +34,7 @@ export const EditorContextProvider: React.FC<{
   children: React.ReactNode,
   learningContextId: string;
   fullScreen: boolean;
+  isNewBlock: boolean;
 }> = ({ children, ...contextData }) => {
   const ctx: EditorContext = React.useMemo(() => ({ ...contextData }), []);
   return <context.Provider value={ctx}>{children}</context.Provider>;

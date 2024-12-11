@@ -44,6 +44,7 @@ export const ComponentEditorModal: React.FC<Record<never, never>> = () => {
       onClose={onClose}
       returnFunction={() => { onClose(); return () => {}; }}
       fullScreen={false}
+      isNewBlock={componentBeingEdited.isNewBlock}
     />
   );
 };

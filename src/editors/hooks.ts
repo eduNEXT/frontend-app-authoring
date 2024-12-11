@@ -66,6 +66,16 @@ export const saveBlock = ({
   }
 };
 
+export const createBlock = ({
+  content,
+  dispatch,
+}) => {
+  dispatch(thunkActions.app.createBlock(
+    content,
+    {},
+  ));
+};
+
 export const clearSaveError = ({
   dispatch,
 }) => () => dispatch(actions.requests.clearRequest({ requestKey: RequestKeys.saveBlock }));

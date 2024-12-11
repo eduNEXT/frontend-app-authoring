@@ -125,16 +125,16 @@ export const saveBlock = ({ content, ...rest }) => (dispatch, getState) => {
 };
 
 /**
- * Tracked saveBlock api method.  Tracked to the `saveBlock` request key.
- * @param {string} content
+ * Tracked createBlock api method.
  * @param {[func]} onSuccess - onSuccess method ((response) => { ... })
  * @param {[func]} onFailure - onFailure method ((error) => { ... })
  */
 export const createBlock = ({ content, ...rest }) => (dispatch, getState) => {
+  const definitionId = selectors.app.blockTitle(getState()).replaceAll(' ', '-') || selectors.app.blockId(getState()).split(':')[4]
   createLibraryBlock({
     libraryId: selectors.app.learningContextId(getState()),
     blockType: selectors.app.blockType(getState()),
-    definitionId: selectors.app.blockId(getState()).split(':')[4],
+    definitionId,
   }).then((data) => {
     console.debug('create a new component', data);
   }).catch((error) => {

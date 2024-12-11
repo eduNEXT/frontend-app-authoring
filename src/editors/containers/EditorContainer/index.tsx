@@ -78,6 +78,7 @@ const EditorContainer: React.FC<Props> = ({
   const dispatch = useDispatch();
   // Required to mark data as not dirty on save
   const [saved, setSaved] = React.useState(false);
+  const { isNewBlock } = useEditorContext();
   const isInitialized = true;
   const { isCancelConfirmOpen, openCancelConfirmModal, closeCancelConfirmModal } = hooks.cancelConfirmModalToggle();
   const handleCancel = hooks.handleCancel({ onClose, returnFunction });
@@ -89,6 +90,7 @@ const EditorContainer: React.FC<Props> = ({
     getContent,
     validateEntry,
     returnFunction,
+    isNewBlock,
   });
 
   const onSave = () => {
