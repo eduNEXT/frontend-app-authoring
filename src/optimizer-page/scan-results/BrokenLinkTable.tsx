@@ -1,4 +1,4 @@
-import { Icon, Table } from '@openedx/paragon';
+import { Icon, DataTable } from '@openedx/paragon';
 import { OpenInNew, Lock, LinkOff } from '@openedx/paragon/icons';
 import { useIntl } from '@edx/frontend-platform/i18n';
 import { FC } from 'react';
@@ -42,7 +42,7 @@ const BrokenLinkTable: FC<BrokenLinkTableProps> = ({
   return (
     <>
       <p className="unit-header">{unit.displayName}</p>
-      <Table
+      <DataTable
         data={unit.blocks.reduce(
           (
             acc: TableData,
