@@ -171,7 +171,6 @@ describe('<CourseUnit />', () => {
       expect(within(unitHeaderTitle).getByRole('button', { name: headerTitleMessages.altButtonEdit.defaultMessage })).toBeInTheDocument();
       expect(within(unitHeaderTitle).getByRole('button', { name: headerTitleMessages.altButtonSettings.defaultMessage })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: headerNavigationsMessages.viewLiveButton.defaultMessage })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: headerNavigationsMessages.previewButton.defaultMessage })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: currentSectionName })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: currentSubSectionName })).toBeInTheDocument();
     });
@@ -584,7 +583,6 @@ describe('<CourseUnit />', () => {
     window.open = jest.fn();
     render(<RootWrapper />);
     const {
-      draft_preview_link: draftPreviewLink,
       published_preview_link: publishedPreviewLink,
     } = courseSectionVerticalMock;
 
@@ -593,11 +591,6 @@ describe('<CourseUnit />', () => {
       userEvent.click(viewLiveButton);
       expect(window.open).toHaveBeenCalled();
       expect(window.open).toHaveBeenCalledWith(publishedPreviewLink, '_blank');
-
-      const previewButton = screen.getByRole('button', { name: headerNavigationsMessages.previewButton.defaultMessage });
-      userEvent.click(previewButton);
-      expect(window.open).toHaveBeenCalled();
-      expect(window.open).toHaveBeenCalledWith(draftPreviewLink, '_blank');
     });
 
     window.open = open;

@@ -8,25 +8,17 @@ import messages from './messages';
 
 const HeaderNavigations = ({ headerNavigationsActions, category }) => {
   const intl = useIntl();
-  const { handleViewLive, handlePreview, handleEdit } = headerNavigationsActions;
+  const { handleViewLive, handleEdit } = headerNavigationsActions;
 
   return (
     <nav className="header-navigations ml-auto flex-shrink-0">
       {category === COURSE_BLOCK_NAMES.vertical.id && (
-        <>
-          <Button
-            variant="outline-primary"
-            onClick={handleViewLive}
-          >
-            {intl.formatMessage(messages.viewLiveButton)}
-          </Button>
-          <Button
-            variant="outline-primary"
-            onClick={handlePreview}
-          >
-            {intl.formatMessage(messages.previewButton)}
-          </Button>
-        </>
+        <Button
+          variant="outline-primary"
+          onClick={handleViewLive}
+        >
+          {intl.formatMessage(messages.viewLiveButton)}
+        </Button>
       )}
       {[COURSE_BLOCK_NAMES.libraryContent.id, COURSE_BLOCK_NAMES.splitTest.id].includes(category) && (
         <Button
