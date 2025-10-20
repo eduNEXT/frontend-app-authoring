@@ -6,6 +6,8 @@ import { IntlProvider } from '@edx/frontend-platform/i18n';
 import HeaderNavigations from './HeaderNavigations';
 import messages from './messages';
 
+const { getAuthenticatedHttpClient } = require('@edx/frontend-platform/auth');
+
 const handleNewSectionMock = jest.fn();
 const handleReIndexMock = jest.fn();
 const handleExpandAllMock = jest.fn();
@@ -38,7 +40,15 @@ const renderComponent = (props) => render(
   </IntlProvider>,
 );
 
+jest.mock('@edx/frontend-platform/auth');
+
 describe('<HeaderNavigations />', () => {
+  beforeEach(() => {
+    getAuthenticatedHttpClient.mockReset();
+    const get = jest.fn(() => Promise.reject(new Error('not found')));
+    getAuthenticatedHttpClient.mockReturnValue({ get });
+  });
+
   it('render HeaderNavigations component correctly', () => {
     const { getByRole } = renderComponent();
 

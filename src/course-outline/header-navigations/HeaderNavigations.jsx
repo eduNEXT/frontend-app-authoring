@@ -1,12 +1,16 @@
 import React from 'react';
+import { useParams } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { useIntl } from '@edx/frontend-platform/i18n';
+import { getConfig } from '@edx/frontend-platform';
+import { getAuthenticatedHttpClient } from '@edx/frontend-platform/auth';
 import { Button, OverlayTrigger, Tooltip } from '@openedx/paragon';
 import {
   Add as IconAdd,
   ArrowDropDown as ArrowDownIcon,
   ArrowDropUp as ArrowUpIcon,
 } from '@openedx/paragon/icons';
+import { ProgramsMetadataForm } from '@edunext/frontend-essentials';
 
 import messages from './messages';
 
@@ -23,6 +27,7 @@ const HeaderNavigations = ({
   const {
     handleNewSection, handleReIndex, handleExpandAll, lmsLink,
   } = headerNavigationsActions;
+  const { courseId } = useParams();
 
   return (
     <>
@@ -92,6 +97,7 @@ const HeaderNavigations = ({
           {intl.formatMessage(messages.viewLiveButton)}
         </Button>
       </OverlayTrigger>
+      <ProgramsMetadataForm courseId={courseId} client={getAuthenticatedHttpClient} config={getConfig} />
     </>
   );
 };

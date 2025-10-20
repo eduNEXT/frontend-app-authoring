@@ -17,3 +17,7 @@ module.exports = createConfig('jest', {
     '/src/pages-and-resources/utils.test.jsx',
   ],
 });
+
+module.exports.transformIgnorePatterns = [
+  '/node_modules/(?!(@edx|@edunext|@openedx))',
+];
