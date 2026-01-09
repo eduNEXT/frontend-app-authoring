@@ -233,10 +233,9 @@ const LibraryAuthoringPage = ({
 
   const activeTypeFilters = {
     components: 'type = "library_block"',
-    collections: 'type = "collection"',
     units: 'block_type = "unit"',
   };
-  if (activeKey !== ContentType.home) {
+  if (activeKey !== ContentType.home && activeKey !== ContentType.collections) {
     extraFilter.push(activeTypeFilters[activeKey]);
   }
 
