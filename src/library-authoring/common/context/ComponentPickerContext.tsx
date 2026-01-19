@@ -89,6 +89,46 @@ type ComponentPickerProviderProps = {
 } & ComponentPickerProps;
 
 /**
+ * Builds indexed maps for efficient collection lookups.
+ * This creates two maps:
+ * 1. collectionToComponents: Maps collection keys to their component arrays
+ * 2. componentToCollections: Maps component usage keys to their collection keys
+ *
+ * Complexity: O(n) once per hits update instead of O(n × m) per widget
+ */
+export const useCollectionIndexing = (
+  hits: any[], // Type should match ReturnType<typeof useSearchContext>['hits']
+) => useMemo(() => {
+  const collectionToComponents = new Map<string, SelectedComponent[]>();
+  const componentToCollections = new Map<string, string[]>();
+
+  hits.forEach((hit) => {
+    if (hit.type === 'library_block') {
+      const collectionKeys = (hit as any).collections?.key ?? [];
+
+      // Index component → collections mapping
+      if (hit.usageKey) {
+        componentToCollections.set(hit.usageKey, collectionKeys);
+      }
+
+      // Index collection → components mapping
+      collectionKeys.forEach((collectionKey: string) => {
+        if (!collectionToComponents.has(collectionKey)) {
+          collectionToComponents.set(collectionKey, []);
+        }
+        collectionToComponents.get(collectionKey)!.push({
+          usageKey: hit.usageKey,
+          blockType: hit.blockType,
+          collectionKeys,
+        });
+      });
+    }
+  });
+
+  return { collectionToComponents, componentToCollections };
+}, [hits]);
+
+/**
  * React component to provide `ComponentPickerContext`
  */
 export const ComponentPickerProvider = ({
@@ -129,6 +169,7 @@ export const ComponentPickerProvider = ({
 
   /**
    * Finds the common collection key between a component and selected components.
+   * Optimized with Set for O(n) instead of O(n*m) complexity.
    */
   const findCommonCollectionKey = useCallback((
     componentKeys: string[] | undefined,
@@ -138,8 +179,11 @@ export const ComponentPickerProvider = ({
       return undefined;
     }
 
+    // Convert to Set for O(1) lookups instead of O(m) for each includes()
+    const componentKeySet = new Set(componentKeys);
+
     for (const component of components) {
-      const commonKey = component.collectionKeys?.find((key) => componentKeys.includes(key));
+      const commonKey = component.collectionKeys?.find((key) => componentKeySet.has(key));
       if (commonKey) {
         return commonKey;
       }

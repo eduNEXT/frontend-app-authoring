@@ -8,8 +8,12 @@ import {
   CheckBoxOutlineBlank,
 } from '@openedx/paragon/icons';
 
-import { ContentHit, useSearchContext } from '../../search-manager';
-import { SelectedComponent, useComponentPickerContext } from '../common/context/ComponentPickerContext';
+import { useSearchContext } from '../../search-manager';
+import {
+  SelectedComponent,
+  useComponentPickerContext,
+  useCollectionIndexing,
+} from '../common/context/ComponentPickerContext';
 import messages from './messages';
 
 interface AddComponentWidgetProps {
@@ -18,35 +22,6 @@ interface AddComponentWidgetProps {
   collectionKeys?: string[];
   isCollection?: boolean;
 }
-
-/**
- * Builds an array of SelectedComponent from collection hits.
- */
-const buildCollectionComponents = (
-  hits: ReturnType<typeof useSearchContext>['hits'],
-  collectionUsageKey: string,
-): SelectedComponent[] => hits
-  .filter((hit) => hit.type === 'library_block' && hit.collections?.key?.includes(collectionUsageKey))
-  .map((hit: ContentHit) => ({
-    usageKey: hit.usageKey,
-    blockType: hit.blockType,
-    collectionKeys: (hit as ContentHit).collections?.key,
-  }));
-
-/**
- * Counts the number of hits that share a collection key with the given component.
- */
-const countCollectionHits = (
-  hits: ReturnType<typeof useSearchContext>['hits'],
-  componentCollectionKey: string[] | undefined,
-): number => {
-  if (!componentCollectionKey?.length) {
-    return 0;
-  }
-  return hits.filter(
-    (hit) => (hit as ContentHit).collections?.key?.some((key) => componentCollectionKey.includes(key)),
-  ).length;
-};
 
 const AddComponentWidget = ({
   usageKey, blockType, collectionKeys, isCollection,
@@ -64,16 +39,30 @@ const AddComponentWidget = ({
 
   const { hits } = useSearchContext();
 
+  // Use indexed lookup for O(1) performance instead of O(n) filtering
+  const { collectionToComponents, componentToCollections } = useCollectionIndexing(hits);
+
   const collectionData = useMemo(() => {
-    // When selecting a collection: retrieve all its components to enable bulk selection
+    // When selecting a collection: O(1) lookup instead of O(n) filter
     if (isCollection) {
-      return buildCollectionComponents(hits, usageKey);
+      return collectionToComponents.get(usageKey) ?? [];
     }
-    // When selecting an individual component: get the total count of components in its collection
-    // This count is used to determine if the entire collection should be marked as selected
-    const componentCollectionKey = (hits.find((hit) => hit.usageKey === usageKey) as ContentHit)?.collections?.key;
-    return countCollectionHits(hits, componentCollectionKey);
-  }, [hits, usageKey, isCollection]);
+
+    // When selecting an individual component: O(1) lookup + O(m) count
+    const componentCollectionKeys = componentToCollections.get(usageKey);
+    if (!componentCollectionKeys?.length) {
+      return 0;
+    }
+
+    // Count total components across all collections this component belongs to
+    const componentSet = new Set<string>();
+    componentCollectionKeys.forEach((collectionKey) => {
+      const components = collectionToComponents.get(collectionKey) ?? [];
+      components.forEach((comp) => componentSet.add(comp.usageKey));
+    });
+
+    return componentSet.size;
+  }, [collectionToComponents, componentToCollections, usageKey, isCollection]);
 
   // istanbul ignore if: this should never happen
   if (!usageKey) {
