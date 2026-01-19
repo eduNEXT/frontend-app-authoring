@@ -8,8 +8,13 @@ import {
   CheckBoxOutlineBlank,
 } from '@openedx/paragon/icons';
 
-import { ContentHit, useSearchContext } from '../../search-manager';
-import { SelectedComponent, useComponentPickerContext } from '../common/context/ComponentPickerContext';
+import { useSearchContext } from '../../search-manager';
+import {
+  SelectedComponent,
+  useComponentPickerContext,
+  useCollectionIndexing,
+} from '../common/context/ComponentPickerContext';
+
 import messages from './messages';
 
 interface AddComponentWidgetProps {
@@ -18,35 +23,6 @@ interface AddComponentWidgetProps {
   collectionKeys?: string[];
   isCollection?: boolean;
 }
-
-/**
- * Builds an array of SelectedComponent from collection hits.
- */
-const buildCollectionComponents = (
-  hits: ReturnType<typeof useSearchContext>['hits'],
-  collectionUsageKey: string,
-): SelectedComponent[] => hits
-  .filter((hit) => hit.type === 'library_block' && hit.collections?.key?.includes(collectionUsageKey))
-  .map((hit: ContentHit) => ({
-    usageKey: hit.usageKey,
-    blockType: hit.blockType,
-    collectionKeys: (hit as ContentHit).collections?.key,
-  }));
-
-/**
- * Counts the number of hits that share a collection key with the given component.
- */
-const countCollectionHits = (
-  hits: ReturnType<typeof useSearchContext>['hits'],
-  componentCollectionKey: string[] | undefined,
-): number => {
-  if (!componentCollectionKey?.length) {
-    return 0;
-  }
-  return hits.filter(
-    (hit) => (hit as ContentHit).collections?.key?.some((key) => componentCollectionKey.includes(key)),
-  ).length;
-};
 
 const AddComponentWidget = ({
   usageKey, blockType, collectionKeys, isCollection,
@@ -63,17 +39,43 @@ const AddComponentWidget = ({
   } = useComponentPickerContext();
 
   const { hits } = useSearchContext();
+  const {
+    collectionToComponents,
+    componentToCollections,
+    collectionToAffectedSizes,
+    collectionSizes,
+  } = useCollectionIndexing(hits);
 
   const collectionData = useMemo(() => {
-    // When selecting a collection: retrieve all its components to enable bulk selection
     if (isCollection) {
-      return buildCollectionComponents(hits, usageKey);
+      return {
+        components: collectionToComponents.get(usageKey) ?? [],
+        affectedCollectionSizes: collectionToAffectedSizes.get(usageKey) ?? new Map<string, number>(),
+      };
     }
-    // When selecting an individual component: get the total count of components in its collection
-    // This count is used to determine if the entire collection should be marked as selected
-    const componentCollectionKey = (hits.find((hit) => hit.usageKey === usageKey) as ContentHit)?.collections?.key;
-    return countCollectionHits(hits, componentCollectionKey);
-  }, [hits, usageKey, isCollection]);
+
+    const componentCollectionKeys = componentToCollections.get(usageKey);
+    if (!componentCollectionKeys?.length) {
+      return new Map<string, number>();
+    }
+
+    const sizes = new Map<string, number>();
+    componentCollectionKeys.forEach((collectionKey) => {
+      const size = collectionSizes.get(collectionKey);
+      if (size !== undefined) {
+        sizes.set(collectionKey, size);
+      }
+    });
+
+    return sizes;
+  }, [
+    collectionToComponents,
+    componentToCollections,
+    collectionToAffectedSizes,
+    collectionSizes,
+    usageKey,
+    isCollection,
+  ]);
 
   // istanbul ignore if: this should never happen
   if (!usageKey) {
@@ -120,10 +122,19 @@ const AddComponentWidget = ({
         blockType,
         collectionKeys,
       };
+
+      const isCollectionData = isCollection && 'components' in collectionData;
+
       if (!isChecked) {
-        addComponentToSelectedComponents(selectedComponent, collectionData);
+        addComponentToSelectedComponents(
+          selectedComponent,
+          isCollectionData ? collectionData : collectionData as Map<string, number>,
+        );
       } else {
-        removeComponentFromSelectedComponents(selectedComponent, collectionData);
+        removeComponentFromSelectedComponents(
+          selectedComponent,
+          isCollectionData ? collectionData : collectionData as Map<string, number>,
+        );
       }
     };
 

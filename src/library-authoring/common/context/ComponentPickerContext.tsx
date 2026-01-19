@@ -5,6 +5,8 @@ import {
   useMemo,
   useState,
 } from 'react';
+import { ContentHit } from 'search-manager';
+import { useSearchContext } from 'search-manager/SearchManager';
 
 export interface SelectedComponent {
   usageKey: string;
@@ -19,9 +21,14 @@ export interface SelectedCollection {
   status: CollectionStatus;
 }
 
+export interface CollectionData {
+  components: SelectedComponent[];
+  affectedCollectionSizes: Map<string, number>;
+}
+
 export type ComponentSelectedEvent = (
   selectedComponent: SelectedComponent,
-  collectionComponents?: SelectedComponent[] | number
+  collectionComponents?: CollectionData | Map<string, number>
 ) => void;
 export type ComponentSelectionChangedEvent = (selectedComponents: SelectedComponent[]) => void;
 
@@ -89,6 +96,87 @@ type ComponentPickerProviderProps = {
 } & ComponentPickerProps;
 
 /**
+ * Pre-computed collection indexing data for O(1) lookups
+ */
+export interface CollectionIndexData {
+  /** Map: collectionKey → components in that collection */
+  collectionToComponents: Map<string, SelectedComponent[]>;
+  /** Map: componentUsageKey → collection keys it belongs to */
+  componentToCollections: Map<string, string[]>;
+  /** Map: collectionKey → Map of all affected collections with their sizes */
+  collectionToAffectedSizes: Map<string, Map<string, number>>;
+  /** Map: collectionKey → total component count (for quick size lookup) */
+  collectionSizes: Map<string, number>;
+}
+
+/**
+ * Hook to build indexing maps for collections and components.
+ * Pre-computes all relationships for O(1) lookups during selection operations.
+ * @param hits - Search hits from which to build the indexes
+ * @returns Pre-computed collection index data
+ */
+export const useCollectionIndexing = (
+  hits: ReturnType<typeof useSearchContext>['hits'],
+): CollectionIndexData => useMemo(() => {
+  const collectionToComponents = new Map<string, SelectedComponent[]>();
+  const componentToCollections = new Map<string, string[]>();
+  const collectionSizes = new Map<string, number>();
+
+  // First pass: build basic indexes
+  hits.forEach((hit) => {
+    if (hit.type === 'library_block') {
+      const collectionKeys = (hit as ContentHit).collections?.key ?? [];
+
+      // Index component → collections mapping
+      if (hit.usageKey) {
+        componentToCollections.set(hit.usageKey, collectionKeys);
+      }
+
+      // Index collection → components mapping
+      collectionKeys.forEach((collectionKey: string) => {
+        if (!collectionToComponents.has(collectionKey)) {
+          collectionToComponents.set(collectionKey, []);
+        }
+        collectionToComponents.get(collectionKey)!.push({
+          usageKey: hit.usageKey,
+          blockType: hit.blockType,
+          collectionKeys,
+        });
+      });
+    }
+  });
+
+  // Second pass: compute collection sizes
+  collectionToComponents.forEach((components, collectionKey) => {
+    collectionSizes.set(collectionKey, components.length);
+  });
+
+  // Third pass: pre-compute affected collections for each collection
+  const collectionToAffectedSizes = new Map<string, Map<string, number>>();
+  collectionToComponents.forEach((components, collectionKey) => {
+    const affectedSizes = new Map<string, number>();
+
+    // For each component in this collection, find all collections it belongs to
+    components.forEach((component) => {
+      component.collectionKeys?.forEach((affectedKey) => {
+        if (!affectedSizes.has(affectedKey)) {
+          affectedSizes.set(affectedKey, collectionSizes.get(affectedKey) ?? 0);
+        }
+      });
+    });
+
+    collectionToAffectedSizes.set(collectionKey, affectedSizes);
+  });
+
+  return {
+    collectionToComponents,
+    componentToCollections,
+    collectionToAffectedSizes,
+    collectionSizes,
+  };
+}, [hits]);
+
+/**
  * React component to provide `ComponentPickerContext`
  */
 export const ComponentPickerProvider = ({
@@ -101,59 +189,13 @@ export const ComponentPickerProvider = ({
   const [selectedComponents, setSelectedComponents] = useState<SelectedComponent[]>([]);
   const [selectedCollections, setSelectedCollections] = useState<SelectedCollection[]>([]);
 
-  /**
-   * Updates the selectedCollections state based on how many components are selected.
-   * @param collectionKey - The key of the collection to update
-   * @param selectedCount - Number of components currently selected in the collection
-   * @param totalCount - Total number of components in the collection
-   */
-  const updateCollectionStatus = useCallback((
-    collectionKey: string,
-    selectedCount: number,
-    totalCount: number,
-  ) => {
-    setSelectedCollections((prevSelectedCollections) => {
-      const filteredCollections = prevSelectedCollections.filter(
-        (collection) => collection.key !== collectionKey,
-      );
-
-      if (selectedCount === 0) {
-        return filteredCollections;
-      }
-      if (selectedCount >= totalCount) {
-        return [...filteredCollections, { key: collectionKey, status: 'selected' as CollectionStatus }];
-      }
-      return [...filteredCollections, { key: collectionKey, status: 'indeterminate' as CollectionStatus }];
-    });
-  }, []);
-
-  /**
-   * Finds the common collection key between a component and selected components.
-   */
-  const findCommonCollectionKey = useCallback((
-    componentKeys: string[] | undefined,
-    components: SelectedComponent[],
-  ): string | undefined => {
-    if (!componentKeys?.length || !components.length) {
-      return undefined;
-    }
-
-    for (const component of components) {
-      const commonKey = component.collectionKeys?.find((key) => componentKeys.includes(key));
-      if (commonKey) {
-        return commonKey;
-      }
-    }
-
-    return undefined;
-  }, []);
-
   const addComponentToSelectedComponents = useCallback<ComponentSelectedEvent>((
     selectedComponent: SelectedComponent,
-    collectionComponents?: SelectedComponent[] | number,
+    collectionComponents?: CollectionData | Map<string, number>,
   ) => {
-    const componentsToAdd = Array.isArray(collectionComponents) && collectionComponents.length
-      ? collectionComponents
+    const isCollectionSelection = collectionComponents && 'components' in collectionComponents;
+    const componentsToAdd = isCollectionSelection
+      ? collectionComponents.components
       : [selectedComponent];
 
     setSelectedComponents((prevSelectedComponents) => {
@@ -166,49 +208,55 @@ export const ComponentPickerProvider = ({
 
       const newSelectedComponents = [...prevSelectedComponents, ...newComponents];
 
-      // Handle collection selection (when selecting entire collection)
-      if (Array.isArray(collectionComponents) && collectionComponents.length) {
-        updateCollectionStatus(
-          selectedComponent.usageKey,
-          collectionComponents.length,
-          collectionComponents.length,
-        );
-      }
+      const collectionSizes = isCollectionSelection
+        ? collectionComponents.affectedCollectionSizes
+        : collectionComponents;
 
-      // Handle individual component selection (with total count)
-      if (typeof collectionComponents === 'number') {
-        const componentCollectionKeys = selectedComponent.collectionKeys;
-        const selectedCollectionComponents = newSelectedComponents.filter(
-          (component) => component.collectionKeys?.some(
-            (key) => componentCollectionKeys?.includes(key),
-          ),
-        );
+      if (collectionSizes instanceof Map && collectionSizes.size > 0) {
+        const selectedByCollection = new Map<string, number>();
 
-        const collectionKey = findCommonCollectionKey(
-          componentCollectionKeys,
-          selectedCollectionComponents,
-        );
+        newSelectedComponents.forEach((component) => {
+          component.collectionKeys?.forEach((key) => {
+            if (collectionSizes.has(key)) {
+              selectedByCollection.set(key, (selectedByCollection.get(key) ?? 0) + 1);
+            }
+          });
+        });
 
-        if (collectionKey) {
-          updateCollectionStatus(
-            collectionKey,
-            selectedCollectionComponents.length,
-            collectionComponents,
+        // Batch update all collection statuses
+        setSelectedCollections((prevSelectedCollections) => {
+          const collectionMap = new Map(
+            prevSelectedCollections.map((c) => [c.key, c]),
           );
-        }
+
+          collectionSizes.forEach((totalCount, collectionKey) => {
+            const selectedCount = selectedByCollection.get(collectionKey) ?? 0;
+
+            if (selectedCount === 0) {
+              collectionMap.delete(collectionKey);
+            } else if (selectedCount >= totalCount) {
+              collectionMap.set(collectionKey, { key: collectionKey, status: 'selected' });
+            } else {
+              collectionMap.set(collectionKey, { key: collectionKey, status: 'indeterminate' });
+            }
+          });
+
+          return Array.from(collectionMap.values());
+        });
       }
 
       onChangeComponentSelection?.(newSelectedComponents);
       return newSelectedComponents;
     });
-  }, []);
+  }, [onChangeComponentSelection]);
 
   const removeComponentFromSelectedComponents = useCallback<ComponentSelectedEvent>((
     selectedComponent: SelectedComponent,
-    collectionComponents?: SelectedComponent[] | number,
+    collectionComponents?: CollectionData | Map<string, number>,
   ) => {
-    const componentsToRemove = Array.isArray(collectionComponents) && collectionComponents.length
-      ? collectionComponents
+    const isCollectionSelection = collectionComponents && 'components' in collectionComponents;
+    const componentsToRemove = isCollectionSelection
+      ? collectionComponents.components
       : [selectedComponent];
     const usageKeysToRemove = new Set(componentsToRemove.map((c) => c.usageKey));
 
@@ -217,33 +265,48 @@ export const ComponentPickerProvider = ({
         (component) => !usageKeysToRemove.has(component.usageKey),
       );
 
-      if (typeof collectionComponents === 'number') {
-        const componentCollectionKeys = selectedComponent.collectionKeys;
-        const collectionKey = findCommonCollectionKey(componentCollectionKeys, componentsToRemove);
+      const collectionSizes = isCollectionSelection
+        ? collectionComponents.affectedCollectionSizes
+        : collectionComponents;
 
-        if (collectionKey) {
-          const remainingCollectionComponents = newSelectedComponents.filter(
-            (component) => component.collectionKeys?.includes(collectionKey),
+      if (collectionSizes instanceof Map && collectionSizes.size > 0) {
+        const selectedByCollection = new Map<string, number>();
+
+        // Only count components for collections we care about
+        newSelectedComponents.forEach((component) => {
+          component.collectionKeys?.forEach((key) => {
+            if (collectionSizes.has(key)) {
+              selectedByCollection.set(key, (selectedByCollection.get(key) ?? 0) + 1);
+            }
+          });
+        });
+
+        // Batch update all collection statuses
+        setSelectedCollections((prevSelectedCollections) => {
+          const collectionMap = new Map(
+            prevSelectedCollections.map((c) => [c.key, c]),
           );
-          updateCollectionStatus(
-            collectionKey,
-            remainingCollectionComponents.length,
-            collectionComponents,
-          );
-        }
-      } else {
-        // Fallback: remove collections that have no remaining components
-        setSelectedCollections((prevSelectedCollections) => prevSelectedCollections.filter(
-          (collection) => newSelectedComponents.some(
-            (component) => component.collectionKeys?.includes(collection.key),
-          ),
-        ));
+
+          collectionSizes.forEach((totalCount, collectionKey) => {
+            const selectedCount = selectedByCollection.get(collectionKey) ?? 0;
+
+            if (selectedCount === 0) {
+              collectionMap.delete(collectionKey);
+            } else if (selectedCount >= totalCount) {
+              collectionMap.set(collectionKey, { key: collectionKey, status: 'selected' });
+            } else {
+              collectionMap.set(collectionKey, { key: collectionKey, status: 'indeterminate' });
+            }
+          });
+
+          return Array.from(collectionMap.values());
+        });
       }
 
       onChangeComponentSelection?.(newSelectedComponents);
       return newSelectedComponents;
     });
-  }, []);
+  }, [onChangeComponentSelection]);
 
   const context = useMemo<ComponentPickerContextData>(() => {
     switch (componentPickerMode) {
