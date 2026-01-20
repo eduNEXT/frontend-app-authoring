@@ -230,6 +230,10 @@ describe('<ComponentPicker />', () => {
     onChange.mockClear();
 
     // Select another component
+    /**
+    * Due to collections have "Select" buttons as well, we need to target the 8th button in the list
+    * to select the second component in the search results, taking into account the `library-search.json` mock data.
+    */
     fireEvent.click(screen.queryAllByRole('button', { name: 'Select' })[7]);
     await waitFor(() => expect(onChange).toHaveBeenCalledWith([
       {
