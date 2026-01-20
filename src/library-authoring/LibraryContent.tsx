@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { LoadingSpinner } from '../generic/Loading';
 import { useSearchContext } from '../search-manager';
 import { NoComponents, NoSearchResults } from './EmptyStates';
@@ -50,9 +50,12 @@ const LibraryContent = ({ contentType = ContentType.home }: LibraryContentProps)
    * selection workflow when adding components to xblocks by choosing the whole collection in Collections tab.
    * Note: LibraryAuthoringPage.tsx has been modified to skip backend filtering for this purpose.
    */
-  const filteredHits = contentType === ContentType.collections
-    ? hits.filter((hit) => hit.type === 'collection')
-    : hits;
+  const filteredHits = useMemo(
+    () => (contentType === ContentType.collections
+      ? hits.filter((hit) => hit.type === 'collection')
+      : hits),
+    [hits, contentType],
+  );
 
   useEffect(() => {
     if (usageKey) {
