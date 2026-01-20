@@ -5,7 +5,7 @@ import {
   useMemo,
   useState,
 } from 'react';
-import { ContentHit, useSearchContext } from 'search-manager';
+import { ContentHit, useSearchContext } from '../../../search-manager';
 
 /**
  * Provides pre-computed collection indexing data to avoid repeated computation.
