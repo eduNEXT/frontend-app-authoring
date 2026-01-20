@@ -60,7 +60,7 @@ const ComponentCard = ({ hit }: ComponentCardProps) => {
             <AddComponentWidget
               usageKey={usageKey}
               blockType={blockType}
-              collectionKeys={collections?.key ?? undefined}
+              collectionKeys={collections?.key}
             />
           ) : (
             <ComponentMenu usageKey={usageKey} />
