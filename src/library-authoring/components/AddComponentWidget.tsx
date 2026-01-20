@@ -8,11 +8,10 @@ import {
   CheckBoxOutlineBlank,
 } from '@openedx/paragon/icons';
 
-import { useSearchContext } from '../../search-manager';
 import {
   SelectedComponent,
   useComponentPickerContext,
-  useCollectionIndexing,
+  useCollectionIndexContext,
 } from '../common/context/ComponentPickerContext';
 
 import messages from './messages';
@@ -38,13 +37,12 @@ const AddComponentWidget = ({
     selectedCollections,
   } = useComponentPickerContext();
 
-  const { hits } = useSearchContext();
   const {
     collectionToComponents,
     componentToCollections,
     collectionToAffectedSizes,
     collectionSizes,
-  } = useCollectionIndexing(hits);
+  } = useCollectionIndexContext();
 
   const collectionData = useMemo(() => {
     if (isCollection) {

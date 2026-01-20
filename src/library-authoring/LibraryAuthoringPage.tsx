@@ -38,7 +38,7 @@ import {
 } from '../search-manager';
 import LibraryContent from './LibraryContent';
 import { LibrarySidebar } from './library-sidebar';
-import { useComponentPickerContext } from './common/context/ComponentPickerContext';
+import { useComponentPickerContext, CollectionIndexProvider } from './common/context/ComponentPickerContext';
 import { useLibraryContext } from './common/context/LibraryContext';
 import { SidebarBodyComponentId, useSidebarContext } from './common/context/SidebarContext';
 import { allLibraryPageTabs, ContentType, useLibraryRoutes } from './routes';
@@ -284,38 +284,40 @@ const LibraryAuthoringPage = ({
             extraFilter={extraFilter}
             overrideTypesFilter={overrideTypesFilter}
           >
-            <SubHeader
-              title={<SubHeaderTitle title={libraryData.title} />}
-              subtitle={!componentPickerMode ? intl.formatMessage(messages.headingSubtitle) : undefined}
-              breadcrumbs={breadcumbs}
-              headerActions={<HeaderActions />}
-              hideBorder
-            />
-            <Tabs
-              variant="tabs"
-              activeKey={activeKey}
-              onSelect={handleTabChange}
-              className="my-3"
-            >
-              {visibleTabsToRender}
-            </Tabs>
-            <ActionRow className="my-3">
-              <SearchKeywordsField className="mr-3" />
-              <FilterByTags />
-              {!(insideCollections || insideUnits) && <FilterByBlockType />}
-              <LibraryFilterByPublished key={
-                // It is necessary to re-render `LibraryFilterByPublished` every time `FilterByBlockType`
-                // appears or disappears, this is because when the menu is opened it is rendered
-                // in a previous state, causing an inconsistency in its position.
-                // By changing the key we can re-render the component.
-                !(insideCollections || insideUnits) ? 'filter-published-1' : 'filter-published-2'
-              }
+            <CollectionIndexProvider>
+              <SubHeader
+                title={<SubHeaderTitle title={libraryData.title} />}
+                subtitle={!componentPickerMode ? intl.formatMessage(messages.headingSubtitle) : undefined}
+                breadcrumbs={breadcumbs}
+                headerActions={<HeaderActions />}
+                hideBorder
               />
-              <ClearFiltersButton />
-              <ActionRow.Spacer />
-              <SearchSortWidget />
-            </ActionRow>
-            <LibraryContent contentType={activeKey} />
+              <Tabs
+                variant="tabs"
+                activeKey={activeKey}
+                onSelect={handleTabChange}
+                className="my-3"
+              >
+                {visibleTabsToRender}
+              </Tabs>
+              <ActionRow className="my-3">
+                <SearchKeywordsField className="mr-3" />
+                <FilterByTags />
+                {!(insideCollections || insideUnits) && <FilterByBlockType />}
+                <LibraryFilterByPublished key={
+                  // It is necessary to re-render `LibraryFilterByPublished` every time `FilterByBlockType`
+                  // appears or disappears, this is because when the menu is opened it is rendered
+                  // in a previous state, causing an inconsistency in its position.
+                  // By changing the key we can re-render the component.
+                  !(insideCollections || insideUnits) ? 'filter-published-1' : 'filter-published-2'
+                }
+                />
+                <ClearFiltersButton />
+                <ActionRow.Spacer />
+                <SearchSortWidget />
+              </ActionRow>
+              <LibraryContent contentType={activeKey} />
+            </CollectionIndexProvider>
           </SearchContextProvider>
         </Container>
         {!componentPickerMode && <StudioFooterSlot containerProps={{ size: undefined }} />}

@@ -5,8 +5,12 @@ import {
   useMemo,
   useState,
 } from 'react';
-import { ContentHit } from 'search-manager';
-import { useSearchContext } from 'search-manager/SearchManager';
+import { ContentHit, useSearchContext } from 'search-manager';
+
+/**
+ * Provides pre-computed collection indexing data to avoid repeated computation.
+ */
+const CollectionIndexContext = createContext<CollectionIndexData | undefined>(undefined);
 
 export interface SelectedComponent {
   usageKey: string;
@@ -175,6 +179,40 @@ export const useCollectionIndexing = (
     collectionSizes,
   };
 }, [hits]);
+
+type CollectionIndexProviderProps = {
+  children: React.ReactNode;
+};
+
+/**
+ * React component to provide pre-computed collection indexing data.
+ * Must be rendered inside a SearchContextProvider.
+ * This provider ensures collection indexing is computed once and shared
+ * with all AddComponentWidget instances, avoiding O(n*m) complexity.
+ */
+export const CollectionIndexProvider = ({ children }: CollectionIndexProviderProps) => {
+  const { hits } = useSearchContext();
+  const collectionIndexData = useCollectionIndexing(hits);
+
+  return (
+    <CollectionIndexContext.Provider value={collectionIndexData}>
+      {children}
+    </CollectionIndexContext.Provider>
+  );
+};
+
+/**
+ * Hook to access pre-computed collection indexing data.
+ * Must be used within a CollectionIndexProvider.
+ * @returns CollectionIndexData with pre-computed maps
+ */
+export const useCollectionIndexContext = (): CollectionIndexData => {
+  const ctx = useContext(CollectionIndexContext);
+  if (ctx === undefined) {
+    throw new Error('useCollectionIndexContext must be used within a CollectionIndexProvider');
+  }
+  return ctx;
+};
 
 /**
  * React component to provide `ComponentPickerContext`
