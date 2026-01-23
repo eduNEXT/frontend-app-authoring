@@ -6,7 +6,7 @@ import {
   SearchSortOption,
   TAG_SEP,
   fetchAvailableTagOptions,
-  fetchSearchResults,
+  fetchAllSearchResults,
   fetchTagsThatMatchKeyword,
   getContentSearchConfig,
   fetchBlockTypes,
@@ -106,7 +106,7 @@ export const useContentSearchResults = ({
       if (client === undefined || indexName === undefined) {
         throw new Error('Required data unexpectedly undefined. Check "enable" condition of useQuery.');
       }
-      return fetchSearchResults({
+      return fetchAllSearchResults({
         client,
         extraFilter,
         indexName,
