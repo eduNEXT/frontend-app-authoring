@@ -330,7 +330,9 @@ export async function fetchAllSearchResults(
   let problemTypes: Record<string, number> = {};
   let publishStatus: Record<string, number> = {};
 
-  do {
+  let hasNextPage = true;
+
+  while (hasNextPage) {
     // eslint-disable-next-line no-await-in-loop
     const page = await fetchSearchResults({
       ...params,
@@ -348,8 +350,19 @@ export async function fetchAllSearchResults(
     }
 
     nextOffset = page.nextOffset;
-    offset = nextOffset ?? offset;
-  } while (nextOffset !== undefined);
+
+    // Stop conditions
+    if (
+      nextOffset === undefined
+    || nextOffset <= offset
+    || allHits.length >= totalHits
+    ) {
+      hasNextPage = false;
+      break;
+    }
+
+    offset = nextOffset;
+  }
 
   return {
     hits: allHits,
