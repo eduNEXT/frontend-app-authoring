@@ -123,7 +123,6 @@ export const useContentSearchResults = ({
         limit,
       });
     },
-    getNextPageParam: (lastPage) => lastPage.nextOffset,
     // Avoid flickering results when user is typing... keep old results until new is available.
     keepPreviousData: true,
     refetchOnWindowFocus: false, // This doesn't need to be refreshed when the user switches back to this tab.
