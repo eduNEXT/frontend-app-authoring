@@ -310,6 +310,69 @@ export async function fetchSearchResults({
   };
 }
 
+export async function fetchAllSearchResults(
+  params: FetchSearchParams,
+): Promise<{
+    hits: HitType[];
+    totalHits: number;
+    blockTypes: Record<string, number>;
+    problemTypes: Record<string, number>;
+    publishStatus: Record<string, number>;
+  }> {
+  const allHits: HitType[] = [];
+  const limit = params.limit ?? 100;
+
+  let offset = 0;
+  let nextOffset: number | undefined;
+
+  let totalHits = 0;
+  let blockTypes: Record<string, number> = {};
+  let problemTypes: Record<string, number> = {};
+  let publishStatus: Record<string, number> = {};
+
+  let hasNextPage = true;
+
+  while (hasNextPage) {
+    // eslint-disable-next-line no-await-in-loop
+    const page = await fetchSearchResults({
+      ...params,
+      offset,
+      limit,
+    });
+
+    allHits.push(...page.hits);
+
+    if (offset === 0) {
+      totalHits = page.totalHits;
+      blockTypes = page.blockTypes;
+      problemTypes = page.problemTypes;
+      publishStatus = page.publishStatus;
+    }
+
+    nextOffset = page.nextOffset;
+
+    // Stop conditions
+    if (
+      nextOffset === undefined
+    || nextOffset <= offset
+    || allHits.length >= totalHits
+    ) {
+      hasNextPage = false;
+      break;
+    }
+
+    offset = nextOffset;
+  }
+
+  return {
+    hits: allHits,
+    totalHits,
+    blockTypes,
+    problemTypes,
+    publishStatus,
+  };
+}
+
 /**
  * Fetch the block types facet distribution for the search results.
  */
