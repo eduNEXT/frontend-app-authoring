@@ -11,7 +11,7 @@ import {
   SearchSortOption,
   TAG_SEP,
   fetchAvailableTagOptions,
-  fetchSearchResults,
+  fetchAllSearchResults,
   fetchTagsThatMatchKeyword,
   getContentSearchConfig,
   fetchBlockTypes,
@@ -144,7 +144,7 @@ export const useContentSearchResults = ({
       if (client === undefined || indexName === undefined) {
         throw new Error('Required data unexpectedly undefined. Check "enable" condition of useQuery.');
       }
-      return fetchSearchResults({
+      return fetchAllSearchResults({
         client,
         extraFilter,
         indexName,
@@ -162,7 +162,6 @@ export const useContentSearchResults = ({
       });
     },
     initialPageParam: 0,
-    getNextPageParam: (lastPage) => lastPage.nextOffset,
     // Avoid flickering results when user is typing... keep old results until new is available.
     placeholderData: keepPreviousData,
     refetchOnWindowFocus: false, // This doesn't need to be refreshed when the user switches back to this tab.

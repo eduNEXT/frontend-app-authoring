@@ -42,7 +42,7 @@ import { useMultiLibraryContext } from '@src/library-authoring/common/context/Mu
 import { usePublishedFilterContext } from '@src/library-authoring/common/context/PublishedFilterContext';
 import LibraryContent from './LibraryContent';
 import { LibrarySidebar } from './library-sidebar';
-import { useComponentPickerContext } from './common/context/ComponentPickerContext';
+import { useComponentPickerContext, CollectionIndexProvider } from './common/context/ComponentPickerContext';
 import { useOptionalLibraryContext } from './common/context/LibraryContext';
 import { SidebarBodyItemId, useSidebarContext } from './common/context/SidebarContext';
 import { allLibraryPageTabs, ContentType, useLibraryRoutes } from './routes';
@@ -318,12 +318,11 @@ const LibraryAuthoringPage = ({
 
   const activeTypeFilters = {
     components: 'type = "library_block"',
-    collections: 'type = "collection"',
     units: 'block_type = "unit"',
     subsections: 'block_type = "subsection"',
     sections: 'block_type = "section"',
   };
-  if (activeKey !== ContentType.home) {
+  if (activeKey !== ContentType.home && activeKey !== ContentType.collections) {
     extraFilter.push(activeTypeFilters[activeKey]);
   }
 
@@ -379,8 +378,8 @@ const LibraryAuthoringPage = ({
             extraFilter={extraFilter}
             overrideTypesFilter={overrideTypesFilter}
           >
-            {libraryData
-              && (
+            <CollectionIndexProvider>
+              {libraryData && (
                 <SubHeader
                   title={<SubHeaderTitle title={libraryData.title} />}
                   subtitle={!componentPickerMode ? intl.formatMessage(messages.headingSubtitle) : undefined}
@@ -389,18 +388,19 @@ const LibraryAuthoringPage = ({
                   hideBorder
                 />
               )}
-            {visibleTabs.length > 1 && (
-              <Tabs
-                variant="tabs"
-                activeKey={activeKey}
-                onSelect={handleTabChange}
-                className="my-3"
-              >
-                {visibleTabsToRender}
-              </Tabs>
-            )}
-            <FiltersComponent onlyOneType={onlyOneType} />
-            <LibraryContent contentType={activeKey} />
+              {visibleTabs.length > 1 && (
+                <Tabs
+                  variant="tabs"
+                  activeKey={activeKey}
+                  onSelect={handleTabChange}
+                  className="my-3"
+                >
+                  {visibleTabsToRender}
+                </Tabs>
+              )}
+              <FiltersComponent onlyOneType={onlyOneType} />
+              <LibraryContent contentType={activeKey} />
+            </CollectionIndexProvider>
           </SearchContextProvider>
         </Container>
         {!componentPickerMode && <StudioFooterSlot containerProps={{ size: undefined }} />}

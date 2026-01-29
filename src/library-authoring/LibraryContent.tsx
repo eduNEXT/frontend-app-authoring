@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { LoadingSpinner } from '@src/generic/Loading';
 import { useGetContentHits, useSearchContext } from '@src/search-manager';
 import { useLoadOnScroll } from '@src/hooks';
@@ -72,6 +72,20 @@ const LibraryContent = ({ contentType = ContentType.home }: LibraryContentProps)
     true,
   );
 
+  /**
+   * Filter collections on the frontend to display only collection cards in the Collections tab.
+   * This approach is used instead of backend filtering to ensure that all components (including those
+   * within collections) remain available in the 'hits' array. This is necessary for the component
+   * selection workflow when adding components to xblocks by choosing the whole collection in Collections tab.
+   * Note: LibraryAuthoringPage.tsx has been modified to skip backend filtering for this purpose.
+   */
+  const filteredHits = useMemo(
+    () => (contentType === ContentType.collections
+      ? hits.filter((hit) => hit.type === 'collection')
+      : hits),
+    [hits, contentType],
+  );
+
   useEffect(() => {
     if (usageKey) {
       openComponentInfoSidebar(usageKey);
@@ -105,7 +119,7 @@ const LibraryContent = ({ contentType = ContentType.home }: LibraryContentProps)
 
   return (
     <div className="library-cards-grid">
-      {hits.map((contentHit) => {
+      {filteredHits.map((contentHit) => {
         const CardComponent = LibraryItemCard[contentHit.type] || ComponentCard;
 
         return <CardComponent key={contentHit.id} hit={contentHit} />;

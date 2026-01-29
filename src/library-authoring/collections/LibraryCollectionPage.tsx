@@ -29,7 +29,7 @@ import {
 } from '../../search-manager';
 import { SubHeaderTitle } from '../LibraryAuthoringPage';
 import { useCollection, useContentLibrary } from '../data/apiHooks';
-import { useComponentPickerContext } from '../common/context/ComponentPickerContext';
+import { useComponentPickerContext, CollectionIndexProvider } from '../common/context/ComponentPickerContext';
 import { useOptionalLibraryContext } from '../common/context/LibraryContext';
 import { SidebarBodyItemId, useSidebarContext } from '../common/context/SidebarContext';
 import messages from './messages';
@@ -217,22 +217,24 @@ const LibraryCollectionPage = () => {
             indexType="library"
             extraFilter={extraFilter}
           >
-            <SubHeader
-              title={<SubHeaderTitle title={collectionData.title} />}
-              breadcrumbs={breadcrumbs}
-              headerActions={<HeaderActions />}
-              hideBorder
-            />
-            <ActionRow className="my-3">
-              <SearchKeywordsField className="mr-3" />
-              <FilterByTags />
-              <FilterByBlockType />
-              <LibraryFilterByPublished />
-              <ClearFiltersButton />
-              <ActionRow.Spacer />
-              <SearchSortWidget />
-            </ActionRow>
-            <LibraryCollectionComponents />
+            <CollectionIndexProvider>
+              <SubHeader
+                title={<SubHeaderTitle title={collectionData.title} />}
+                breadcrumbs={breadcrumbs}
+                headerActions={<HeaderActions />}
+                hideBorder
+              />
+              <ActionRow className="my-3">
+                <SearchKeywordsField className="mr-3" />
+                <FilterByTags />
+                <FilterByBlockType />
+                <LibraryFilterByPublished />
+                <ClearFiltersButton />
+                <ActionRow.Spacer />
+                <SearchSortWidget />
+              </ActionRow>
+              <LibraryCollectionComponents />
+            </CollectionIndexProvider>
           </SearchContextProvider>
         </Container>
         {!componentPickerMode && <StudioFooterSlot containerProps={{ size: undefined }} />}

@@ -25,6 +25,7 @@ const ComponentCard = ({ hit }: ComponentCardProps) => {
     formatted,
     tags,
     usageKey,
+    collections,
     publishStatus,
   } = hit;
   const componentDescription: string = (
@@ -55,9 +56,15 @@ const ComponentCard = ({ hit }: ComponentCardProps) => {
       tags={tags}
       actions={
         <ActionRow>
-          {componentPickerMode ?
-            <AddComponentWidget usageKey={usageKey} blockType={blockType} /> :
-            <ComponentMenu usageKey={usageKey} />}
+          {componentPickerMode ? (
+            <AddComponentWidget
+              usageKey={usageKey}
+              blockType={blockType}
+              collectionKeys={collections?.key}
+            />
+          ) : (
+            <ComponentMenu usageKey={usageKey} />
+          )}
         </ActionRow>
       }
       hasUnpublishedChanges={publishStatus !== PublishStatus.Published}

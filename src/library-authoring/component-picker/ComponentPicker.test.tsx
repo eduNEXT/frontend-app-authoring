@@ -314,19 +314,21 @@ describe('<LibraryAndComponentPicker />', () => {
     onChange.mockClear();
 
     // Select another component
-    fireEvent.click(screen.queryAllByRole('button', { name: 'Select' })[1]);
-    await waitFor(() =>
-      expect(onChange).toHaveBeenCalledWith([
-        {
-          usageKey: 'lb:Axim:TEST:html:571fe018-f3ce-45c9-8f53-5dafcb422fdd',
-          blockType: 'html',
-        },
-        {
-          blockType: 'html',
-          usageKey: 'lb:Axim:TEST:html:73a22298-bcd9-4f4c-ae34-0bc2b0612480',
-        },
-      ])
-    );
+    /**
+    * Due to collections have "Select" buttons as well, we need to target the 8th button in the list
+    * to select the second component in the search results, taking into account the `library-search.json` mock data.
+    */
+    fireEvent.click(screen.queryAllByRole('button', { name: 'Select' })[7]);
+    await waitFor(() => expect(onChange).toHaveBeenCalledWith([
+      {
+        usageKey: 'lb:Axim:TEST:html:571fe018-f3ce-45c9-8f53-5dafcb422fdd',
+        blockType: 'html',
+      },
+      {
+        blockType: 'html',
+        usageKey: 'lb:Axim:TEST:html:73a22298-bcd9-4f4c-ae34-0bc2b0612480',
+      },
+    ]));
 
     onChange.mockClear();
 
