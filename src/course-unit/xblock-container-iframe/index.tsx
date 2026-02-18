@@ -162,8 +162,8 @@ const XBlockContainerIframe: FC<XBlockContainerIframeProps> = ({
     setShowLegacyEditModal(false);
   };
 
-  const handleSaveEditedXBlockData = () => {
-    sendMessageToIframe(messageTypes.completeXBlockEditing, { locator: configureXBlockId });
+  const handleSaveEditedXBlockData = (locator?: string) => {
+    sendMessageToIframe(messageTypes.completeXBlockEditing, { locator: locator ?? configureXBlockId });
     dispatch(updateCourseUnitSidebar(blockId));
     if (!isUnitVerticalType) {
       dispatch(fetchCourseSectionVerticalData(blockId));
