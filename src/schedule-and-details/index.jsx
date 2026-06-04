@@ -1,5 +1,6 @@
 import { useSelector } from 'react-redux';
 import {
+  Alert,
   Container,
   Button,
   Layout,
@@ -8,6 +9,7 @@ import {
 import {
   CheckCircle as CheckCircleIcon,
   ErrorOutline as ErrorOutlineIcon,
+  Lock as LockIcon,
   Warning as WarningIcon,
 } from '@openedx/paragon/icons';
 import { useIntl } from '@edx/frontend-platform/i18n';
@@ -247,6 +249,11 @@ const ScheduleAndDetails = () => {
               {intl.formatMessage(messages.headingTitle)}
             </h2>
           </header>
+          {!canEditSchedule && !canEditDetails && (
+            <Alert variant="info" icon={LockIcon}>
+              {intl.formatMessage(messages.viewOnlyAlert)}
+            </Alert>
+          )}
         </div>
         <section className="setting-items mb-4">
           <Layout
@@ -292,6 +299,7 @@ const ScheduleAndDetails = () => {
                     certificatesDisplayBehavior={certificatesDisplayBehavior}
                     canShowCertificateAvailableDateField={canShowCertificateAvailableDateField}
                     isEditable={canEditSchedule}
+                    showReadOnlyAlert={!canEditSchedule && canEditDetails}
                     onChange={handleValuesChange}
                   />
                   {aboutPageEditable && (
