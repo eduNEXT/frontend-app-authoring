@@ -13,8 +13,7 @@ import { getConfig } from '@edx/frontend-platform';
 import { StudioFooterSlot } from '@edx/frontend-component-footer';
 import { Link, useLocation } from 'react-router-dom';
 
-import { useWaffleFlags } from '@src/data/apiHooks';
-import { useUserPermissions } from '@src/authz/data/apiHooks';
+import { usePlatformUserPermissions } from '@src/authz/hooks';
 import { getViewTeamPermissions } from '@src/authz/permissionHelpers';
 import Loading from '../generic/Loading';
 import InternetConnectionAlert from '../generic/internet-connection-alert';
@@ -49,17 +48,15 @@ const StudioHome = () => {
     librariesV2Enabled,
   } = useStudioHome();
 
-  const waffleFlags = useWaffleFlags();
-  const isAuthzEnabled = waffleFlags?.enableAuthzCourseAuthoring ?? false;
   const adminConsoleBaseUrl = getConfig().ADMIN_CONSOLE_URL;
   const adminConsoleUrl = `${adminConsoleBaseUrl}/authz`;
 
   // The "Roles & Permissions" button links to the admin console, so only show it to users
   // who can view a team somewhere: on any course (view_course_team) or any library
   // (view_library_team).
-  const { data: viewTeamPermissions } = useUserPermissions(
+  const { data: viewTeamPermissions } = usePlatformUserPermissions(
     getViewTeamPermissions(),
-    isAuthzEnabled && !!adminConsoleBaseUrl,
+    !!adminConsoleBaseUrl,
   );
   const canViewConsoleTeams = Boolean(
     viewTeamPermissions?.canViewCourseTeam || viewTeamPermissions?.canViewLibraryTeam,
@@ -84,7 +81,7 @@ const StudioHome = () => {
       );
     }
 
-    if (isAuthzEnabled && adminConsoleBaseUrl && canViewConsoleTeams) {
+    if (canViewConsoleTeams) {
       headerButtons.push(
         <div className="border-right mr-3 pr-4 py-2">
           <Button
@@ -130,7 +127,7 @@ const StudioHome = () => {
     }
 
     return headerButtons;
-  }, [location, userIsActive, isFailedLoadingPage, isAuthzEnabled, adminConsoleBaseUrl, canViewConsoleTeams]);
+  }, [location, userIsActive, isFailedLoadingPage, adminConsoleBaseUrl, canViewConsoleTeams]);
 
   const headerButtons = userIsActive ? getHeaderButtons() : [];
   if (isLoadingPage && !isFiltered) {

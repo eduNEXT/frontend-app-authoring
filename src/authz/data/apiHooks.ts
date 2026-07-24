@@ -1,4 +1,4 @@
-import { skipToken, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { PermissionValidationAnswer, PermissionValidationQuery } from '@src/authz/types';
 import { validateUserPermissions } from './api';
 
@@ -10,9 +10,9 @@ const adminConsoleQueryKeys = {
 
 /**
  * React Query hook to validate if the current user has permissions over a certain object in the instance.
- * It helps to:
- * - Determine whether the current user can access certain object.
- * - Provide role-based rendering logic for UI components.
+ * Low-level data hook — does not read the authz waffle flag. Use `useCourseUserPermissions`
+ * for course-scoped checks (includes the "authz disabled → allow" fallback) or pass
+ * `isAuthzEnabled` explicitly via the `enabled` param for other contexts.
  *
  * @param permissions - A key/value map of objects and actions to validate.
  * The key is an arbitrary string to identify the permission check,
@@ -33,6 +33,7 @@ export const useUserPermissions = (
 ) =>
   useQuery<PermissionValidationAnswer, Error>({
     queryKey: adminConsoleQueryKeys.permissions(permissions),
-    queryFn: enabled ? () => validateUserPermissions(permissions) : skipToken,
+    queryFn: () => validateUserPermissions(permissions),
+    enabled,
     retry: false,
   });

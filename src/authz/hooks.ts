@@ -2,6 +2,27 @@ import { useWaffleFlags } from '@src/data/apiHooks';
 import { useUserPermissions } from '@src/authz/data/apiHooks';
 import { PermissionValidationAnswer, PermissionValidationQuery } from '@src/authz/types';
 
+/**
+ * Hook for platform-level (non-course-scoped) permission checks. Reads the authz
+ * waffle flag internally — callers do not need to pass `isAuthzEnabled`. Has no
+ * "authz disabled → allow" fallback: when authz is off, data is undefined.
+ *
+ * Use this for features that only make sense when authz is active (e.g. the
+ * Roles & Permissions button in Studio Home). Pass `enabled` to add an extra
+ * gate on top of the flag (e.g. whether the admin console URL is configured).
+ *
+ * For course-scoped checks with the legacy-allow fallback, use `useCourseUserPermissions`.
+ * For low-level custom gating (e.g. library features), use `useUserPermissions` directly.
+ */
+export const usePlatformUserPermissions = <Query extends PermissionValidationQuery>(
+  permissions: Query,
+  enabled: boolean = true,
+) => {
+  const waffleFlags = useWaffleFlags();
+  const isAuthzEnabled: boolean = waffleFlags?.enableAuthzCourseAuthoring ?? false;
+  return useUserPermissions(permissions, isAuthzEnabled && enabled);
+};
+
 type UseCourseUserPermissionsReturn<Query extends PermissionValidationQuery> = {
   isLoading: boolean;
   isAuthzEnabled: boolean;
@@ -44,12 +65,11 @@ export const useCourseUserPermissions = <Query extends PermissionValidationQuery
   const waffleFlags = useWaffleFlags(courseId);
   const isWaffleFlagsLoading: boolean = waffleFlags?.isLoading ?? true;
   const isAuthzEnabled: boolean = waffleFlags?.enableAuthzCourseAuthoring ?? false;
-  const shouldValidatePermissions = isAuthzEnabled && !!courseId;
 
   const {
     isLoading: isLoadingUserPermissions,
     data: userPermissions,
-  } = useUserPermissions(permissions, shouldValidatePermissions);
+  } = useUserPermissions(permissions, isAuthzEnabled && !!courseId);
 
   const isLoading = isWaffleFlagsLoading || (isAuthzEnabled && isLoadingUserPermissions);
 
