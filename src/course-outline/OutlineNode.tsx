@@ -30,6 +30,8 @@ import { useClipboard, PasteComponent } from '@src/generic/clipboard';
 import { useIntl } from '@edx/frontend-platform/i18n';
 import type { XBlock, OutlineActionSelection } from '@src/data/types';
 import { useCourseAuthoringContext } from '@src/CourseAuthoringContext';
+import { useLibraryViewPermissions } from '@src/authz/data/apiHooks';
+import { getLibraryId } from '@src/generic/key-utils';
 import { useCourseOutlineContext } from './CourseOutlineContext';
 import { useOutlineSidebarContext } from './outline-sidebar/OutlineSidebarContext';
 import { courseOutlineQueryKeys } from './data/queryKeys';
@@ -139,6 +141,10 @@ const OutlineNode = ({
 
   const shouldRenderUnit = model.shouldRender(blk.isHeaderVisible !== false);
 
+  const libraryKey = blk.upstreamInfo?.upstreamRef ? getLibraryId(blk.upstreamInfo.upstreamRef) : undefined;
+  const { data: libraryViewPermissions } = useLibraryViewPermissions([libraryKey]);
+  const canViewLibrary = libraryViewPermissions?.[libraryKey!] !== false;
+
   const blockSyncData = useMemo(() => {
     if (!blk.upstreamInfo?.readyToSync) { return undefined; }
     return {
@@ -246,7 +252,7 @@ const OutlineNode = ({
         onTitleClick={() => setIsExpanded((p: boolean) => !p)}
         namePrefix={levelConfig.name}
         prefixIcon={
-          <UpstreamInfoIcon upstreamInfo={blk.upstreamInfo} size={levelConfig.iconSize} openSyncModal={openSyncModal} />
+          <UpstreamInfoIcon upstreamInfo={blk.upstreamInfo} size={levelConfig.iconSize} openSyncModal={openSyncModal} canViewLibrary={canViewLibrary} />
         }
       />
     ) :
@@ -256,7 +262,7 @@ const OutlineNode = ({
         titleLink={getUnitUrl(blk.id)}
         namePrefix={levelConfig.name}
         prefixIcon={
-          <UpstreamInfoIcon upstreamInfo={blk.upstreamInfo} size={levelConfig.iconSize} openSyncModal={openSyncModal} />
+          <UpstreamInfoIcon upstreamInfo={blk.upstreamInfo} size={levelConfig.iconSize} openSyncModal={openSyncModal} canViewLibrary={canViewLibrary} />
         }
       />
     );
@@ -345,6 +351,7 @@ const OutlineNode = ({
                   } :
                   {})}
                 readyToSync={blk.upstreamInfo?.readyToSync}
+                canViewLibrary={canViewLibrary}
               />
               <div
                 className={classNames(levelConfig.contentClass, {

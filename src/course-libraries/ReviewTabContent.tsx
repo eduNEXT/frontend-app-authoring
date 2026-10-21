@@ -42,12 +42,15 @@ import { ToastContext } from '../generic/toast-context';
 import { useLoadOnScroll } from '../hooks';
 import DeleteModal from '../generic/delete-modal/DeleteModal';
 import { PublishableEntityLink } from './data/api';
+import { PermissionValidationAnswer } from '@src/authz/types';
+import ReadOnlyWrapper from '@src/generic/ReadOnlyWrapper';
 import AlertError from '../generic/alert-error';
 import NewsstandIcon from '../generic/NewsstandIcon';
 
 interface Props {
   courseId: string;
   readOnly: boolean;
+  libraryViewPermissions?: PermissionValidationAnswer;
 }
 
 interface ItemCardProps {
@@ -139,9 +142,11 @@ const ItemCard: React.FC<ItemCardProps> = ({
 const ItemReviewList = ({
   outOfSyncItems,
   readOnly,
+  libraryViewPermissions,
 }: {
   outOfSyncItems: PublishableEntityLink[];
   readOnly: boolean;
+  libraryViewPermissions?: PermissionValidationAnswer;
 }) => {
   const intl = useIntl();
   const { showToast } = useContext(ToastContext);
@@ -261,38 +266,48 @@ const ItemReviewList = ({
     }
   }, [blockData]);
 
-  const renderActions = useCallback((info: ContentHit) => (
-    <ActionRow>
+  const renderActions = (info: ContentHit) => {
+    const upstreamContextKey = outOfSyncItemsByKey[info.usageKey]?.upstreamContextKey;
+    const canViewItemLibrary = libraryViewPermissions?.[upstreamContextKey] !== false;
+    const reviewButton = (
       <Button
         size="sm"
         variant="outline-primary border-light-300"
         onClick={() => onReview(info)}
         iconBefore={Loop}
         className="mr-2"
+        disabled={!canViewItemLibrary}
       >
         <FormattedMessage {...messages.cardReviewContentBtn} />
       </Button>
-      {!readOnly && (
-        <>
-          <span className="border border-dark py-3 ml-4 mr-3" />
-          <Button
-            variant="tertiary"
-            size="sm"
-            onClick={() => onIgnoreClick(info)}
-          >
-            <FormattedMessage {...messages.cardIgnoreContentBtn} />
-          </Button>
-          <LoadingButton
-            label={intl.formatMessage(messages.cardUpdateContentBtn)}
-            variant="primary"
-            size="sm"
-            onClick={() => updateBlock(info)}
-            className="rounded-0"
-          />
-        </>
-      )}
-    </ActionRow>
-  ), [readOnly, onIgnoreClick, updateBlock]);
+    );
+    return (
+      <ActionRow>
+        <ReadOnlyWrapper readOnly={!canViewItemLibrary}>
+          {reviewButton}
+        </ReadOnlyWrapper>
+        {!readOnly && (
+          <>
+            <span className="border border-dark py-3 ml-4 mr-3" />
+            <Button
+              variant="tertiary"
+              size="sm"
+              onClick={() => onIgnoreClick(info)}
+            >
+              <FormattedMessage {...messages.cardIgnoreContentBtn} />
+            </Button>
+            <LoadingButton
+              label={intl.formatMessage(messages.cardUpdateContentBtn)}
+              variant="primary"
+              size="sm"
+              onClick={() => updateBlock(info)}
+              className="rounded-0"
+            />
+          </>
+        )}
+      </ActionRow>
+    );
+  };
 
   if (isIndexDataPending) {
     return <Loading />;
@@ -334,7 +349,7 @@ const ItemReviewList = ({
   );
 };
 
-const ReviewTabContent = ({ courseId, readOnly }: Props) => {
+const ReviewTabContent = ({ courseId, readOnly, libraryViewPermissions }: Props) => {
   const intl = useIntl();
   const {
     data: outOfSyncItems,
@@ -384,6 +399,7 @@ const ReviewTabContent = ({ courseId, readOnly }: Props) => {
       <ItemReviewList
         outOfSyncItems={outOfSyncItems}
         readOnly={readOnly}
+        libraryViewPermissions={libraryViewPermissions}
       />
     </SearchContextProvider>
   );

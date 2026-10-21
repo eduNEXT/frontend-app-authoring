@@ -30,7 +30,7 @@ import sumBy from 'lodash/sumBy';
 import { useSearchParams } from 'react-router-dom';
 import { useCourseAuthoringContext } from '@src/CourseAuthoringContext';
 import { useCourseUserPermissions } from '@src/authz/hooks';
-import { useUserPermissions } from '@src/authz/data/apiHooks';
+import { useLibraryViewPermissions } from '@src/authz/data/apiHooks';
 import { getLibraryUpdatesPermissions } from '@src/authz/permissionHelpers';
 import { useStudioHome } from '@src/studio-home/hooks';
 import NewsstandIcon from '@src/generic/NewsstandIcon';
@@ -44,10 +44,10 @@ import type { PublishableEntityLinkSummary } from './data/api';
 import ReviewTabContent from './ReviewTabContent';
 import { OutOfSyncAlert } from './OutOfSyncAlert';
 import LegacyLibContentBlockAlert from './LegacyLibContentBlockAlert';
-import { CONTENT_LIBRARY_PERMISSIONS } from '@src/authz/constants';
 
 interface LibraryCardProps {
   linkSummary: PublishableEntityLinkSummary;
+  canViewLibrary: boolean;
 }
 
 export enum CourseLibraryTabs {
@@ -55,23 +55,16 @@ export enum CourseLibraryTabs {
   review = 'review',
 }
 
-const LibraryCard = ({ linkSummary }: LibraryCardProps) => {
-  const { data: libraryPermissions } = useUserPermissions({
-    canViewLibrary: {
-      action: CONTENT_LIBRARY_PERMISSIONS.VIEW_LIBRARY,
-      scope: linkSummary.upstreamContextKey,
-    },
-  }, !!linkSummary.upstreamContextKey);
-  return (
-    <Card className="my-3 border-light-500 border shadow-none">
-      <Card.Header
-        title={
-          <Stack direction="horizontal" gap={2}>
-            <Icon src={NewsstandIcon} />
-            {linkSummary.upstreamContextTitle}
-          </Stack>
-        }
-        actions={libraryPermissions?.canViewLibrary && (
+const LibraryCard = ({ linkSummary, canViewLibrary }: LibraryCardProps) => (
+  <Card className="my-3 border-light-500 border shadow-none">
+    <Card.Header
+      title={
+        <Stack direction="horizontal" gap={2}>
+          <Icon src={NewsstandIcon} />
+          {linkSummary.upstreamContextTitle}
+        </Stack>
+      }
+      actions={canViewLibrary && (
           <ActionRow>
             <Button
               destination={`${getConfig().PUBLIC_PATH}library/${linkSummary.upstreamContextKey}`}
@@ -115,8 +108,7 @@ const LibraryCard = ({ linkSummary }: LibraryCardProps) => {
         </Stack>
       </Card.Section>
     </Card>
-  );
-};
+);
 
 export const CourseLibraries = () => {
   const intl = useIntl();
@@ -128,6 +120,11 @@ export const CourseLibraries = () => {
   const [showReviewAlert, setShowReviewAlert] = useState(false);
   const { data: libraries, isLoading } = useEntityLinksSummaryByDownstreamContext(courseId);
   const outOfSyncCount = useMemo(() => sumBy(libraries, (lib) => lib.readyToSyncCount), [libraries]);
+  const libraryKeys = useMemo(
+    () => (libraries || []).map((l) => l.upstreamContextKey).filter(Boolean),
+    [libraries],
+  );
+  const { data: libraryViewPermissions } = useLibraryViewPermissions(libraryKeys);
   const {
     isLoadingPage: isLoadingStudioHome,
     isFailedLoadingPage: isFailedLoadingStudioHome,
@@ -181,11 +178,12 @@ export const CourseLibraries = () => {
           <LibraryCard
             linkSummary={library}
             key={library.upstreamContextKey}
+            canViewLibrary={libraryViewPermissions?.[library.upstreamContextKey] !== false}
           />
         ))}
       </>
     );
-  }, [libraries, isLoading]);
+  }, [libraries, isLoading, libraryViewPermissions]);
 
   const renderReviewTabContent = useCallback(() => {
     if (isLoading) {
@@ -204,8 +202,8 @@ export const CourseLibraries = () => {
         </Stack>
       );
     }
-    return <ReviewTabContent courseId={courseId} readOnly={!canManageLibraryUpdates} />;
-  }, [canManageLibraryUpdates, outOfSyncCount, isLoading, tabKey]);
+    return <ReviewTabContent courseId={courseId} readOnly={!canManageLibraryUpdates} libraryViewPermissions={libraryViewPermissions} />;
+  }, [canManageLibraryUpdates, outOfSyncCount, isLoading, tabKey, libraryViewPermissions]);
 
   if (isLoadingUserPermissions) {
     return <Loading />;

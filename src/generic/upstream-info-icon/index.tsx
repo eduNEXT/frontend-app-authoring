@@ -26,11 +26,13 @@ export interface UpstreamInfoIconProps {
     downstreamCustomized: string[];
   };
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'inline';
+  canViewLibrary?: boolean;
 }
 
 const UpstreamInfoIconContent = ({
   upstreamInfo,
   size,
+  canViewLibrary,
 }: UpstreamInfoIconProps) => {
   const intl = useIntl();
 
@@ -58,13 +60,12 @@ const UpstreamInfoIconContent = ({
       />
     );
   } else if (upstreamInfo.readyToSync) {
-    tooltipMessage = intl.formatMessage(
-      messages.upstreamLinkReadyToSyncTooltip,
-      {
-        upstreamName: upstreamInfo.upstreamName,
-        b: BoldText,
-      },
-    );
+    tooltipMessage = canViewLibrary === false
+      ? intl.formatMessage(messages.upstreamLinkReadyToSyncNoPermissionTooltip)
+      : intl.formatMessage(
+        messages.upstreamLinkReadyToSyncTooltip,
+        { upstreamName: upstreamInfo.upstreamName, b: BoldText },
+      );
     secondIcon = (
       <Icon
         size={size}
@@ -115,6 +116,7 @@ const UpstreamInfoIconContent = ({
 export const UpstreamInfoIcon: React.FC<UpstreamInfoIconProps & { openSyncModal: () => void; }> = ({
   upstreamInfo,
   size,
+  canViewLibrary,
   openSyncModal,
 }) => {
   if (!upstreamInfo?.upstreamRef) {
@@ -131,9 +133,10 @@ export const UpstreamInfoIcon: React.FC<UpstreamInfoIconProps & { openSyncModal:
       <Button
         variant="tertiary"
         className="border-0 px-0 py-0"
-        onClick={handleSyncModal}
+        onClick={canViewLibrary === false ? undefined : handleSyncModal}
+        disabled={canViewLibrary === false}
       >
-        <UpstreamInfoIconContent upstreamInfo={upstreamInfo} size={size} />
+        <UpstreamInfoIconContent upstreamInfo={upstreamInfo} size={size} canViewLibrary={canViewLibrary} />
       </Button>
     );
   }

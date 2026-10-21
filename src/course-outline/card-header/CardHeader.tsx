@@ -32,6 +32,7 @@ import { useUpdateCourseBlockName } from '@src/course-outline/data/apiHooks';
 import { useCourseAuthoringContext } from '@src/CourseAuthoringContext';
 import { useCourseUserPermissions } from '@src/authz/hooks';
 import { getTagsPermissions, getPagesAndResourcesPermissions } from '@src/authz/permissionHelpers';
+import ReadOnlyWrapper from '@src/generic/ReadOnlyWrapper';
 import { ITEM_BADGE_STATUS } from '../constants';
 import { scrollToElement } from '../utils';
 import CardStatus from './CardStatus';
@@ -75,6 +76,7 @@ interface CardHeaderProps {
   extraActionsComponent?: ReactNode;
   onClickSync?: () => void;
   readyToSync?: boolean;
+  canViewLibrary?: boolean;
 }
 
 const CardHeader = ({
@@ -106,6 +108,7 @@ const CardHeader = ({
   extraActionsComponent,
   onClickSync,
   readyToSync,
+  canViewLibrary,
 }: CardHeaderProps) => {
   const intl = useIntl();
   const [searchParams] = useSearchParams();
@@ -317,17 +320,32 @@ const CardHeader = ({
           )}
           {extraActionsComponent}
           {readyToSync && (
-            <IconButtonWithTooltip
-              data-testid={`${namePrefix}-sync-button`}
-              alt={intl.formatMessage(messages.readyToSyncButtonAlt)}
-              iconAs={SyncIcon}
-              tooltipContent={
-                <div>
-                  <FormattedMessage {...messages.readyToSyncButtonAlt} />
-                </div>
-              }
-              onClick={onClickSync}
-            />
+            canViewLibrary ? (
+              <IconButtonWithTooltip
+                data-testid={`${namePrefix}-sync-button`}
+                alt={intl.formatMessage(messages.readyToSyncButtonAlt)}
+                iconAs={SyncIcon}
+                tooltipContent={
+                  <div>
+                    <FormattedMessage {...messages.readyToSyncButtonAlt} />
+                  </div>
+                }
+                onClick={onClickSync}
+              />
+            ) : (
+              <ReadOnlyWrapper
+                readOnly
+                variant="tooltip"
+                tooltipContent={<FormattedMessage {...messages.readyToSyncNoPermission} />}
+              >
+                <IconButton
+                  data-testid={`${namePrefix}-sync-button`}
+                  alt={intl.formatMessage(messages.readyToSyncButtonAlt)}
+                  iconAs={SyncIcon}
+                  disabled
+                />
+              </ReadOnlyWrapper>
+            )
           )}
           {canEditCourseContent && (
             <Dropdown data-testid={`${namePrefix}-card-header__menu`}>

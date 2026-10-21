@@ -31,6 +31,11 @@ const messages = defineMessages({
     id: 'upstream-icon.ok.tooltip',
     description: 'Tooltip text for the upstream icon when the link is valid.',
   },
+  upstreamLinkReadyToSyncNoPermissionTooltip: {
+    defaultMessage: 'Updates available but your role doesn\'t include permission to sync. Contact your org admin to request access.',
+    id: 'upstream-icon.ready-to-sync.no-permission.tooltip',
+    description: 'Tooltip text for the upstream icon when updates are available but the user lacks sync permission.',
+  },
 });
 
 export default messages;

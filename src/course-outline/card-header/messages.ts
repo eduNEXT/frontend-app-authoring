@@ -96,6 +96,11 @@ const messages = defineMessages({
     defaultMessage: 'Update available - click to sync',
     description: 'Alt text for the sync icon button.',
   },
+  readyToSyncNoPermission: {
+    id: 'course-authoring.course-outline.card.button.sync.no-permission',
+    defaultMessage: 'Update available. Your role doesn\'t include permission to sync. Contact your org admin to request access.',
+    description: 'Tooltip shown on the sync icon button when the user lacks permission to accept library updates.',
+  },
 });
 
 export default messages;

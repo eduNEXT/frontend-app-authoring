@@ -9,8 +9,6 @@ import {
   Button,
   Icon,
   ModalDialog,
-  OverlayTrigger,
-  Popover,
   useToggle,
 } from '@openedx/paragon';
 import { Info } from '@openedx/paragon/icons';
@@ -29,6 +27,7 @@ import { CompareContainersWidget } from '@src/container-comparison/CompareContai
 import { getCourseKey } from '@src/generic/key-utils';
 import { useCourseUserPermissions } from '@src/authz/hooks';
 import { getLibraryUpdatesPermissions } from '@src/authz/permissionHelpers';
+import ReadOnlyWrapper from '@src/generic/ReadOnlyWrapper';
 
 import { messageTypes } from '../constants';
 import { useAcceptLibraryBlockChanges, useIgnoreLibraryBlockChanges } from '../data/apiHooks';
@@ -301,33 +300,14 @@ export const PreviewLibraryXBlockChanges = ({
         {getBody()}
       </ModalDialog.Body>
       <ModalDialog.Footer>
-        {readOnly ?
-          (
-            <ActionRow>
-              <OverlayTrigger
-                trigger={['hover', 'focus']}
-                placement="top"
-                overlay={
-                  <Popover id="readonly-actions-popover">
-                    <Popover.Content className="text-left p-2">
-                      <FormattedMessage {...messages.readOnlyTooltip} />
-                    </Popover.Content>
-                  </Popover>
-                }
-              >
-                <span>
-                  {acceptButton}
-                  {ignoreButton}
-                </span>
-              </OverlayTrigger>
-            </ActionRow>
-          ) :
-          (
-            <ActionRow>
+        <ActionRow>
+          <ReadOnlyWrapper readOnly={readOnly}>
+            <span className="d-flex gap-2">
               {acceptButton}
               {ignoreButton}
-            </ActionRow>
-          )}
+            </span>
+          </ReadOnlyWrapper>
+        </ActionRow>
       </ModalDialog.Footer>
       <ConfirmationModal
         modalType={confirmationModalType}

@@ -1,5 +1,6 @@
 import { skipToken, useQuery } from '@tanstack/react-query';
 import { PermissionValidationAnswer, PermissionValidationQuery } from '@src/authz/types';
+import { CONTENT_LIBRARY_PERMISSIONS } from '@src/authz/constants';
 import { validateUserPermissions } from './api';
 
 const adminConsoleQueryKeys = {
@@ -36,3 +37,20 @@ export const useUserPermissions = (
     queryFn: enabled ? () => validateUserPermissions(permissions) : skipToken,
     retry: false,
   });
+
+/**
+ * Batch-checks `view_library` permission for one or more library keys.
+ * Returns a map of `{ [libraryKey]: boolean }` via React Query.
+ * Defaults each key to `true` while loading (`data` is `undefined`),
+ * so callers should use `data?.[key] !== false` to avoid hiding content during load.
+ */
+export const useLibraryViewPermissions = (libraryKeys: (string | undefined)[]) => {
+  const validKeys = libraryKeys.filter((k): k is string => !!k);
+  return useUserPermissions(
+    Object.fromEntries(
+      validKeys.map((key) => [key, { action: CONTENT_LIBRARY_PERMISSIONS.VIEW_LIBRARY, scope: key }]),
+    ),
+    validKeys.length > 0,
+  );
+};
+
