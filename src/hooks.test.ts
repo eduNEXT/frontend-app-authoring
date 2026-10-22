@@ -1,4 +1,4 @@
-import { fireEvent, renderHook } from '@testing-library/react';
+import { act, fireEvent, renderHook } from '@testing-library/react';
 import { useLocation } from 'react-router-dom';
 import { history } from '@edx/frontend-platform';
 
@@ -70,51 +70,122 @@ describe('Custom Hooks', () => {
 
   describe('useLoadOnScroll', () => {
     const fetchNextPage = jest.fn();
+    let observers: {
+      callback: IntersectionObserverCallback,
+      observe: jest.Mock,
+      disconnect: jest.Mock,
+    }[];
+    let originalIntersectionObserver: typeof IntersectionObserver;
+
+    /** Simulates the sentinel entering or leaving the visible area. */
+    const setSentinelVisible = (isIntersecting: boolean) => {
+      const observer = observers[observers.length - 1];
+      act(() => {
+        observer.callback([{ isIntersecting } as IntersectionObserverEntry], {} as IntersectionObserver);
+      });
+    };
+
+    const renderLoadOnScroll = (initialProps: {
+      hasNextPage: boolean,
+      isFetchingNextPage: boolean,
+      enabled?: boolean,
+    }) => {
+      const sentinel = document.createElement('div');
+      const result = renderHook(
+        ({ hasNextPage, isFetchingNextPage, enabled = true }) => useLoadOnScroll(
+          hasNextPage,
+          isFetchingNextPage,
+          fetchNextPage,
+          enabled,
+        ),
+        { initialProps },
+      );
+      act(() => {
+        result.result.current(sentinel);
+      });
+      return { ...result, sentinel };
+    };
+
+    beforeEach(() => {
+      observers = [];
+      originalIntersectionObserver = global.IntersectionObserver;
+      global.IntersectionObserver = jest.fn((callback: IntersectionObserverCallback) => {
+        const observer = { callback, observe: jest.fn(), disconnect: jest.fn() };
+        observers.push(observer);
+        return observer;
+      }) as unknown as typeof IntersectionObserver;
+    });
 
     afterEach(() => {
+      global.IntersectionObserver = originalIntersectionObserver;
       jest.clearAllMocks();
     });
 
-    it('calls fetchNextPage when scrolled near the bottom', () => {
-      renderHook(() => useLoadOnScroll(true, false, fetchNextPage, true));
+    it('observes the sentinel element', () => {
+      const { sentinel } = renderLoadOnScroll({ hasNextPage: true, isFetchingNextPage: false });
 
-      Object.defineProperty(window, 'innerHeight', { writable: true, configurable: true, value: 1000 });
-      Object.defineProperty(document.body, 'scrollHeight', { writable: true, configurable: true, value: 1500 });
-      window.scrollY = 1200;
+      expect(observers).toHaveLength(1);
+      expect(observers[0].observe).toHaveBeenCalledWith(sentinel);
+    });
 
-      fireEvent.scroll(window);
+    it('calls fetchNextPage when the sentinel becomes visible', () => {
+      renderLoadOnScroll({ hasNextPage: true, isFetchingNextPage: false });
 
-      // Called on scroll once and then due to content being less than screen height
-      // and hasNextPage being true.
+      setSentinelVisible(false);
+      expect(fetchNextPage).not.toHaveBeenCalled();
+
+      setSentinelVisible(true);
+      expect(fetchNextPage).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps fetching pages while the sentinel is still visible after a page loads', () => {
+      const { rerender } = renderLoadOnScroll({ hasNextPage: true, isFetchingNextPage: false });
+
+      // The first page doesn't fill the container, so the sentinel is visible.
+      setSentinelVisible(true);
+      expect(fetchNextPage).toHaveBeenCalledTimes(1);
+
+      // While fetching, the observer is disconnected.
+      rerender({ hasNextPage: true, isFetchingNextPage: true });
+      expect(observers[0].disconnect).toHaveBeenCalled();
+
+      // Once the page is loaded, a new observer reports that the sentinel is still visible.
+      rerender({ hasNextPage: true, isFetchingNextPage: false });
+      expect(observers).toHaveLength(2);
+      setSentinelVisible(true);
+      expect(fetchNextPage).toHaveBeenCalledTimes(2);
+
+      // After the next page fills the container, the sentinel is no longer visible.
+      rerender({ hasNextPage: true, isFetchingNextPage: true });
+      rerender({ hasNextPage: true, isFetchingNextPage: false });
+      setSentinelVisible(false);
       expect(fetchNextPage).toHaveBeenCalledTimes(2);
     });
 
-    it('does not call fetchNextPage if not near the bottom', () => {
-      renderHook(() => useLoadOnScroll(true, false, fetchNextPage, true));
+    it('does not observe the sentinel if fetching is in progress', () => {
+      renderLoadOnScroll({ hasNextPage: true, isFetchingNextPage: true });
 
-      Object.defineProperty(window, 'innerHeight', { writable: true, configurable: true, value: 1000 });
-      Object.defineProperty(document.body, 'scrollHeight', { writable: true, configurable: true, value: 2000 });
-      window.scrollY = 500;
-
-      fireEvent.scroll(window);
-
-      expect(fetchNextPage).not.toHaveBeenCalled();
+      expect(observers).toHaveLength(0);
     });
 
-    it('does not call fetchNextPage if fetching is in progress', () => {
-      renderHook(() => useLoadOnScroll(true, true, fetchNextPage, true));
+    it('does not observe the sentinel if hasNextPage is false', () => {
+      renderLoadOnScroll({ hasNextPage: false, isFetchingNextPage: false });
 
-      fireEvent.scroll(window);
-
-      expect(fetchNextPage).not.toHaveBeenCalled();
+      expect(observers).toHaveLength(0);
     });
 
-    it('does not call fetchNextPage if hasNextPage is false', () => {
-      renderHook(() => useLoadOnScroll(false, false, fetchNextPage, true));
+    it('does not observe the sentinel if disabled', () => {
+      renderLoadOnScroll({ hasNextPage: true, isFetchingNextPage: false, enabled: false });
 
-      fireEvent.scroll(window);
+      expect(observers).toHaveLength(0);
+    });
 
-      expect(fetchNextPage).not.toHaveBeenCalled();
+    it('disconnects the observer on unmount', () => {
+      const { unmount } = renderLoadOnScroll({ hasNextPage: true, isFetchingNextPage: false });
+
+      unmount();
+
+      expect(observers[0].disconnect).toHaveBeenCalled();
     });
   });
 });

@@ -153,7 +153,7 @@ const ItemReviewList = ({
 
   const downstreamInfo = hits as ContentHit[];
 
-  useLoadOnScroll(
+  const loadMoreRef = useLoadOnScroll(
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage,
@@ -296,6 +296,7 @@ const ItemReviewList = ({
           )}
         />
       ))}
+      <div ref={loadMoreRef} />
       {blockData && (
         <PreviewLibraryXBlockChanges
           blockData={blockData}

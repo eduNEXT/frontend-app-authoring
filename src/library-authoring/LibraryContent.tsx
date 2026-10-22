@@ -49,7 +49,7 @@ const LibraryContent = ({ contentType = ContentType.home }: LibraryContentProps)
     }
   }, [usageKey]);
 
-  useLoadOnScroll(
+  const loadMoreRef = useLoadOnScroll(
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage,
@@ -75,12 +75,15 @@ const LibraryContent = ({ contentType = ContentType.home }: LibraryContentProps)
   }
 
   return (
-    <div className="library-cards-grid">
-      {hits.map((contentHit) => {
-        const CardComponent = LibraryItemCard[contentHit.type] || ComponentCard;
+    <div>
+      <div className="library-cards-grid">
+        {hits.map((contentHit) => {
+          const CardComponent = LibraryItemCard[contentHit.type] || ComponentCard;
 
-        return <CardComponent key={contentHit.id} hit={contentHit} />;
-      })}
+          return <CardComponent key={contentHit.id} hit={contentHit} />;
+        })}
+      </div>
+      <div ref={loadMoreRef} />
     </div>
   );
 };

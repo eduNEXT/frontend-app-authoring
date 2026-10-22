@@ -46,7 +46,12 @@ export const useEscapeClick = ({ onEscape, dependency }: { onEscape: () => void,
 };
 
 /**
- * Hook which loads next page of items on scroll
+ * Hook which loads the next page of items when the end of the list becomes visible.
+ *
+ * Returns a callback ref that must be attached to a "sentinel" element rendered
+ * right after the last item of the list. An IntersectionObserver watches that
+ * element, so this works whether the list scrolls with the window (e.g. the
+ * library page) or inside another scroll container (e.g. a modal body).
  */
 export const useLoadOnScroll = (
   hasNextPage: boolean | undefined,
@@ -54,35 +59,34 @@ export const useLoadOnScroll = (
   fetchNextPage: () => void,
   enabled: boolean,
 ) => {
+  const [sentinel, setSentinel] = useState<Element | null>(null);
+  const fetchNextPageRef = useRef(fetchNextPage);
+  fetchNextPageRef.current = fetchNextPage;
+
   useEffect(() => {
-    if (enabled) {
-      const canFetchNextPage = hasNextPage && !isFetchingNextPage;
-      // Used `loadLimit` to fetch next page before reach the end of the screen.
-      const loadLimit = 300;
-
-      const onscroll = () => {
-        // Verify the position of the scroll to implement an infinite scroll.
-        const scrolledTo = window.scrollY + window.innerHeight;
-        const scrollDiff = document.body.scrollHeight - scrolledTo;
-        const isNearToBottom = scrollDiff <= loadLimit;
-        if (isNearToBottom && canFetchNextPage) {
-          fetchNextPage();
-        }
-      };
-      window.addEventListener('scroll', onscroll);
-
-      // If the content is less than the screen height, fetch the next page.
-      const hasNoScroll = (document.body.scrollHeight - loadLimit) <= window.innerHeight;
-      if (hasNoScroll && canFetchNextPage) {
-        fetchNextPage();
-      }
-
-      return () => {
-        window.removeEventListener('scroll', onscroll);
-      };
+    if (!enabled || !sentinel || !hasNextPage || isFetchingNextPage) {
+      return () => { };
     }
-    return () => { };
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+    // A new observer is created after every page load, and it always reports the
+    // current state first. So if the loaded items still don't fill the container
+    // and the sentinel is visible, the next page is fetched right away.
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          fetchNextPageRef.current();
+        }
+      },
+      // Start fetching the next page a bit before reaching the end of the list
+      // when the list scrolls with the window.
+      { rootMargin: '0px 0px 300px 0px' },
+    );
+    observer.observe(sentinel);
+    return () => {
+      observer.disconnect();
+    };
+  }, [enabled, sentinel, hasNextPage, isFetchingNextPage]);
+
+  return setSentinel;
 };
 
 /**

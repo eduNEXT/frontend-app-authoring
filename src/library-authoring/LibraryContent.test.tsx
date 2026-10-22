@@ -2,7 +2,7 @@ import fetchMock from 'fetch-mock-jest';
 
 import { getContentSearchConfigUrl } from '@src/search-manager/data/api';
 import {
-  fireEvent,
+  act,
   render,
   screen,
   initializeMocks,
@@ -94,18 +94,62 @@ describe('<LibraryHome />', () => {
     expect(screen.getByText('You have not added any content to this library yet.')).toBeInTheDocument();
   });
 
-  it('should load more results when the user scrolls to the bottom', async () => {
-    mockUseSearchContext.mockReturnValue({
-      ...data,
-      hits: libraryComponentsMock,
-      hasNextPage: true,
+  describe('infinite scroll', () => {
+    let observerCallback: IntersectionObserverCallback;
+    let observedElement: Element | undefined;
+    let originalIntersectionObserver: typeof IntersectionObserver;
+
+    const setSentinelVisible = (isIntersecting: boolean) => {
+      act(() => {
+        observerCallback([{ isIntersecting } as IntersectionObserverEntry], {} as IntersectionObserver);
+      });
+    };
+
+    beforeEach(() => {
+      observedElement = undefined;
+      originalIntersectionObserver = global.IntersectionObserver;
+      global.IntersectionObserver = jest.fn((callback: IntersectionObserverCallback) => {
+        observerCallback = callback;
+        return {
+          observe: (element: Element) => { observedElement = element; },
+          disconnect: jest.fn(),
+        };
+      }) as unknown as typeof IntersectionObserver;
     });
-    render(<LibraryContent />, withLibraryId(mockContentLibrary.libraryId));
 
-    Object.defineProperty(window, 'innerHeight', { value: 800 });
-    Object.defineProperty(document.body, 'scrollHeight', { value: 1600 });
+    afterEach(() => {
+      global.IntersectionObserver = originalIntersectionObserver;
+    });
 
-    fireEvent.scroll(window, { target: { scrollY: 1000 } });
-    expect(mockFetchNextPage).toHaveBeenCalled();
+    it('should load more results when the end of the list becomes visible', async () => {
+      mockUseSearchContext.mockReturnValue({
+        ...data,
+        hits: libraryComponentsMock,
+        hasNextPage: true,
+      });
+      const { container } = render(<LibraryContent />, withLibraryId(mockContentLibrary.libraryId));
+
+      // The observed sentinel is rendered right after the cards grid.
+      const grid = container.querySelector('.library-cards-grid');
+      expect(observedElement).toBeDefined();
+      expect(grid?.nextElementSibling).toBe(observedElement);
+
+      setSentinelVisible(false);
+      expect(mockFetchNextPage).not.toHaveBeenCalled();
+
+      setSentinelVisible(true);
+      expect(mockFetchNextPage).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not observe the end of the list when there are no more results', async () => {
+      mockUseSearchContext.mockReturnValue({
+        ...data,
+        hits: libraryComponentsMock,
+        hasNextPage: false,
+      });
+      render(<LibraryContent />, withLibraryId(mockContentLibrary.libraryId));
+
+      expect(observedElement).toBeUndefined();
+    });
   });
 });
