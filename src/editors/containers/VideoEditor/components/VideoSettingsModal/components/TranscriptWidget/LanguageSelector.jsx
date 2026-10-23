@@ -15,17 +15,18 @@ import { thunkActions, selectors } from '../../../../../../data/redux';
 import { videoTranscriptLanguages } from '../../../../../../data/constants/video';
 import { FileInput, fileInput } from '../../../../../../sharedComponents/FileInput';
 import messages from './messages';
+import './LanguageSelector.scss';
 
 export const hooks = {
   onSelectLanguage: ({
     dispatch,
     languageBeforeChange,
     triggerupload,
-    setLocalLang,
+    setPendingUploadLang,
   }) =>
   ({ newLang }) => {
     // IF Language is unset, set language and begin upload prompt.
-    setLocalLang(newLang);
+    setPendingUploadLang(newLang);
     if (languageBeforeChange === '') {
       triggerupload();
       return;
@@ -39,11 +40,11 @@ export const hooks = {
     );
   },
 
-  addFileCallback: ({ dispatch, localLang }) => (file) => {
+  addFileCallback: ({ dispatch, pendingUploadLang }) => (file) => {
     dispatch(thunkActions.video.uploadTranscript({
       file,
       filename: file.name,
-      language: localLang,
+      language: pendingUploadLang,
     }));
   },
 };
@@ -54,12 +55,12 @@ const LanguageSelector = ({
 }) => {
   const openLanguages = useSelector(selectors.video.openLanguages);
   const intl = useIntl();
-  const [localLang, setLocalLang] = React.useState(language);
-  const input = fileInput({ onAddFile: hooks.addFileCallback({ dispatch: useDispatch(), localLang }) });
+  const [pendingUploadLang, setPendingUploadLang] = React.useState(language);
+  const input = fileInput({ onAddFile: hooks.addFileCallback({ dispatch: useDispatch(), pendingUploadLang }) });
   const onLanguageChange = hooks.onSelectLanguage({
     dispatch: useDispatch(),
-    languageBeforeChange: localLang,
-    setLocalLang,
+    languageBeforeChange: language,
+    setPendingUploadLang,
     triggerupload: input.click,
   });
 
@@ -94,7 +95,7 @@ const LanguageSelector = ({
         >
           {getTitle()}
         </Dropdown.Toggle>
-        <Dropdown.Menu>
+        <Dropdown.Menu className="transcript-language-select-menu">
           {Object.entries(videoTranscriptLanguages).map(([lang, text]) => {
             if (language === lang) {
               return (
