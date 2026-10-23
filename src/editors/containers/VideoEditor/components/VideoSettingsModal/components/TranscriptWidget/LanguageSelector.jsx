@@ -59,7 +59,7 @@ const LanguageSelector = ({
   const input = fileInput({ onAddFile: hooks.addFileCallback({ dispatch: useDispatch(), localLang }) });
   const onLanguageChange = hooks.onSelectLanguage({
     dispatch: useDispatch(),
-    languageBeforeChange: localLang,
+    languageBeforeChange: language,
     setLocalLang,
     triggerupload: input.click,
   });
