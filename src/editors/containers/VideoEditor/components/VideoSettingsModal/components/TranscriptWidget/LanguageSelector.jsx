@@ -15,6 +15,7 @@ import { thunkActions, selectors } from '../../../../../../data/redux';
 import { videoTranscriptLanguages } from '../../../../../../data/constants/video';
 import { FileInput, fileInput } from '../../../../../../sharedComponents/FileInput';
 import messages from './messages';
+import './LanguageSelector.scss';
 
 export const hooks = {
   onSelectLanguage: ({
@@ -94,7 +95,7 @@ const LanguageSelector = ({
         >
           {getTitle()}
         </Dropdown.Toggle>
-        <Dropdown.Menu>
+        <Dropdown.Menu className="transcript-language-select-menu">
           {Object.entries(videoTranscriptLanguages).map(([lang, text]) => {
             if (language === lang) {
               return (
