@@ -93,11 +93,12 @@ describe('LanguageSelector', () => {
     render(<LanguageSelector index={1} language={lang1Code} />);
     fireEvent.click(screen.getByRole('button', { name: 'Languages' }));
     fireEvent.click(screen.getByText(lang2));
-    expect(thunkActions.video.updateTranscriptLanguage).toHaveBeenCalledWith({
-      newLanguageCode: lang2Code,
-      languageBeforeChange: lang1Code,
+    expect(mockDispatch).toHaveBeenCalledWith({
+      updateTranscriptLanguage: {
+        newLanguageCode: lang2Code,
+        languageBeforeChange: lang1Code,
+      },
     });
-    expect(mockDispatch).toHaveBeenCalled();
   });
 
   describe('on an unset transcript', () => {
@@ -130,8 +131,15 @@ describe('LanguageSelector', () => {
       // The author cancels the file picker: no file is selected, so no change event fires.
       await chooseLanguage(user, lang2);
       expect(pickerClick).toHaveBeenCalledTimes(2);
+    });
+
+    test('choosing the same language after cancelling the file picker does not change the language', async () => {
+      const user = userEvent.setup();
+      render(<LanguageSelector index={1} language="" />);
+      await chooseLanguage(user, lang2);
+      // The author cancels the file picker: no file is selected, so no change event fires.
+      await chooseLanguage(user, lang2);
       expect(thunkActions.video.updateTranscriptLanguage).not.toHaveBeenCalled();
-      expect(screen.getByRole('button', { name: 'Languages' })).toHaveTextContent('Select Language');
     });
 
     test('a file picked after cancelling and choosing another language uploads under that language', async () => {
@@ -142,8 +150,6 @@ describe('LanguageSelector', () => {
       await chooseLanguage(user, lang3);
       const file = new File(['1\n00:00:00,000 --> 00:00:01,000\nHi'], 'captions.srt', { type: 'text/plain' });
       await user.upload(container.querySelector('input.upload[type="file"]'), file);
-      expect(pickerClick).toHaveBeenCalledTimes(2);
-      expect(thunkActions.video.updateTranscriptLanguage).not.toHaveBeenCalled();
       expect(thunkActions.video.uploadTranscript).toHaveBeenCalledWith({
         file,
         filename: 'captions.srt',

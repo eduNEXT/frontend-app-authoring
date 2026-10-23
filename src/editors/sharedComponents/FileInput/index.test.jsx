@@ -1,6 +1,10 @@
 import React from 'react';
-import { fireEvent, render } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {
+  fireEvent,
+  initializeMocks,
+  render,
+  userEvent,
+} from '@src/testUtils';
 
 import { FileInput, fileInput } from '.';
 
@@ -11,6 +15,7 @@ describe('FileInput component', () => {
   let container;
   let props;
   beforeEach(() => {
+    initializeMocks();
     container = {};
     props = {
       acceptedFiles: '.srt',
@@ -43,6 +48,10 @@ describe('fileInput hook with FileInput', () => {
     const input = fileInput({ onAddFile });
     return <FileInput fileInput={input} acceptedFiles=".srt" />;
   };
+
+  beforeEach(() => {
+    initializeMocks();
+  });
 
   test('clears the input after a file is selected, so the same file can be picked again', async () => {
     const user = userEvent.setup();
